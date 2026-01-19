@@ -1,0 +1,70 @@
+[debug] [2026-01-19T17:14:44.960Z] ----------------------------------------------------------------------
+[debug] [2026-01-19T17:14:44.967Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Anmol\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init functions
+[debug] [2026-01-19T17:14:44.967Z] CLI Version:   14.26.0
+[debug] [2026-01-19T17:14:44.968Z] Platform:      win32
+[debug] [2026-01-19T17:14:44.968Z] Node Version:  v24.11.0
+[debug] [2026-01-19T17:14:44.968Z] Time:          Mon Jan 19 2026 22:44:44 GMT+0530 (India Standard Time)
+[debug] [2026-01-19T17:14:44.968Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  D:\Files\Html Codes\Presentation Evaluation v3\Presentation Evaluation
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-01-19T17:14:52.265Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-19T17:14:52.265Z] > authorizing via signed-in user (presentationevaluator@gmail.com)
+[debug] [2026-01-19T17:14:52.267Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:52.267Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:52.269Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/meswcoe-scoreflow [none]
+[debug] [2026-01-19T17:14:52.975Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/meswcoe-scoreflow 200
+[debug] [2026-01-19T17:14:52.976Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/meswcoe-scoreflow {"projectId":"meswcoe-scoreflow","projectNumber":"1092131953558","displayName":"MESWCOE ScoreFlow","name":"projects/meswcoe-scoreflow","resources":{"hostingSite":"meswcoe-scoreflow"},"state":"ACTIVE","etag":"1_52736b13-b8a2-4d5a-b96a-a8fc755c1235"}
+[info] i  Using project meswcoe-scoreflow (MESWCOE ScoreFlow) . 
+[info] 
+=== Functions Setup
+[debug] [2026-01-19T17:14:53.034Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-19T17:14:53.035Z] > authorizing via signed-in user (presentationevaluator@gmail.com)
+[debug] [2026-01-19T17:14:53.035Z] [iam] checking project meswcoe-scoreflow for permissions ["firebase.projects.get"]
+[debug] [2026-01-19T17:14:53.035Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:53.035Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:53.035Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/meswcoe-scoreflow:testIamPermissions [none]
+[debug] [2026-01-19T17:14:53.035Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/meswcoe-scoreflow:testIamPermissions x-goog-quota-user=projects/meswcoe-scoreflow
+[debug] [2026-01-19T17:14:53.035Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/meswcoe-scoreflow:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2026-01-19T17:14:54.541Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/meswcoe-scoreflow:testIamPermissions 200
+[debug] [2026-01-19T17:14:54.542Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/meswcoe-scoreflow:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2026-01-19T17:14:54.543Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:54.543Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:54.543Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:54.543Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:54.543Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-19T17:14:54.544Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/meswcoe-scoreflow
+[debug] [2026-01-19T17:14:54.545Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/runtimeconfig.googleapis.com [none]
+[debug] [2026-01-19T17:14:54.545Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/meswcoe-scoreflow
+[debug] [2026-01-19T17:14:56.529Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/runtimeconfig.googleapis.com 200
+[debug] [2026-01-19T17:14:56.531Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2026-01-19T17:14:56.589Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-19T17:14:56.590Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-19T17:14:56.591Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:56.591Z] Checked if tokens are valid: true, expires at: 1768845294456
+[debug] [2026-01-19T17:14:56.592Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com:enable [none]
+[debug] [2026-01-19T17:14:56.592Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com:enable x-goog-quota-user=projects/meswcoe-scoreflow
+[debug] [2026-01-19T17:14:57.171Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com:enable 200
+[debug] [2026-01-19T17:14:57.171Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/meswcoe-scoreflow/services/cloudfunctions.googleapis.com:enable [omitted]
+[info] 
+Detected existing codebase(s): default
+

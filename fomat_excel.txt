@@ -1,0 +1,63 @@
+Sub format_Sheet()
+'
+' format_Sheet Macro
+'
+
+'
+    Cells.Select
+    Selection.FormatConditions.Add Type:=xlExpression, Formula1:= _
+        "=LEN(TRIM(A1))>0"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Borders(xlLeft)
+        .LineStyle = xlContinuous
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.FormatConditions(1).Borders(xlRight)
+        .LineStyle = xlContinuous
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.FormatConditions(1).Borders(xlTop)
+        .LineStyle = xlContinuous
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    With Selection.FormatConditions(1).Borders(xlBottom)
+        .LineStyle = xlContinuous
+        .TintAndShade = 0
+        .Weight = xlThin
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+    With Selection
+        .HorizontalAlignment = xlGeneral
+        .VerticalAlignment = xlBottom
+        .WrapText = True
+        .Orientation = 0
+        .AddIndent = False
+        .IndentLevel = 0
+        .ShrinkToFit = False
+        .ReadingOrder = xlContext
+    End With
+    With Selection
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlBottom
+        .WrapText = True
+        .Orientation = 0
+        .AddIndent = False
+        .IndentLevel = 0
+        .ShrinkToFit = False
+        .ReadingOrder = xlContext
+    End With
+    With Selection
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+        .Orientation = 0
+        .AddIndent = False
+        .IndentLevel = 0
+        .ShrinkToFit = False
+        .ReadingOrder = xlContext
+    End With
+    Range("A4:A7").Select
+End Sub
