@@ -35,10 +35,12 @@ ADD COLUMN IF NOT EXISTS finance_self DECIMAL(5,2) DEFAULT 0 CHECK (finance_self
 ADD COLUMN IF NOT EXISTS finance_industry DECIMAL(5,2) DEFAULT 0 CHECK (finance_industry >= 0 AND finance_industry <= 10);
 
 -- =====================================================
--- Add Project Type Column
+-- Add Project Type Column and Industry Name
 -- =====================================================
 ALTER TABLE evaluations
-ADD COLUMN IF NOT EXISTS project_type_in_house_sponsored VARCHAR(50);
+ADD COLUMN IF NOT EXISTS project_type_in_house_sponsored VARCHAR(50),
+ADD COLUMN IF NOT EXISTS project_title TEXT,
+ADD COLUMN IF NOT EXISTS industry_name TEXT;
 
 -- =====================================================
 -- Verification Queries

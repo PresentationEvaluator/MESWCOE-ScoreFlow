@@ -357,7 +357,6 @@ export default function GroupManagement({ presentationId, onClose }: GroupManage
                                             <input
                                                 type="text"
                                                 name="student4"
-                                                required
                                                 placeholder="Enter student name"
                                                 className="form-input"
                                             />

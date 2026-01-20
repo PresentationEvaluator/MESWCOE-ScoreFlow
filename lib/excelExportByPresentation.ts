@@ -247,16 +247,25 @@ export async function exportProjectClassificationReport(
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
         const tick = "√";
+        const industryDisplay = (evaluation.finance_industry || 0) > 0 ? 
+          `${tick}${evaluation.industry_name ? ` - ${evaluation.industry_name}` : ""}` : "";
+        
+        // Build the In-Home/Sponsored display with industry name if applicable
+        let projectTypeDisplay = evaluation.project_type_in_house_sponsored || "";
+        if (evaluation.project_type_in_house_sponsored === "Sponsored" && evaluation.industry_name) {
+          projectTypeDisplay = `${projectTypeDisplay}\n(${evaluation.industry_name})`;
+        }
+        
         rows.push([
           group.group_number, student?.student_name || "", group.guide_name,
-          evaluation.project_title || "", evaluation.project_type_in_house_sponsored || "",
+          evaluation.project_title || "", projectTypeDisplay,
           (evaluation.classification_product || 0) > 0 ? tick : "",
           (evaluation.classification_research || 0) > 0 ? tick : "",
           (evaluation.classification_application || 0) > 0 ? tick : "",
           (evaluation.classification_design || 0) > 0 ? tick : "",
           (evaluation.finance_institute || 0) > 0 ? tick : "",
           (evaluation.finance_self || 0) > 0 ? tick : "",
-          (evaluation.finance_industry || 0) > 0 ? tick : "",
+          industryDisplay,
         ]);
       }
       // Add spacer row

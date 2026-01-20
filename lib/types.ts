@@ -102,6 +102,7 @@ export interface Evaluation {
   classification_research: number;
   classification_application: number;
   classification_design: number;
+  classification_multiple: string | null; // JSON array of selected classifications for multi-choice
   // Presentation 1 Additional Fields - Scope of Finance
   finance_institute: number;
   finance_self: number;
@@ -109,6 +110,7 @@ export interface Evaluation {
   // Presentation 1 Additional Fields - Project Type
   project_type_in_house_sponsored: string | null;
   project_title: string | null;
+  industry_name: string | null; // Industry name for Sponsored projects
   // Image fields for Excel exports
   pasted_image_1: string | null; // Presentation 2 image (base64 or URL)
   pasted_image_2: string | null; // Presentation 4 image (base64 or URL)

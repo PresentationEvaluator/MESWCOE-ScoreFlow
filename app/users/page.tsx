@@ -7,9 +7,10 @@ import Logo from "@/components/Logo";
 import UserProfile from "@/components/UserProfile";
 import { User } from "@/lib/types";
 import { getAllUsers, registerUser, updateUser, deleteUser } from "@/lib/auth";
+import { exportUsersToExcel } from "@/lib/excelExportUsers";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Plus, Trash2, Edit2, ArrowLeft, Shield } from "lucide-react";
+import { Plus, Trash2, Edit2, ArrowLeft, Shield, Eye, EyeOff, Download } from "lucide-react";
 
 export default function UsersPage() {
   const { user, isAdmin } = useAuth();
@@ -18,6 +19,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -95,6 +97,7 @@ export default function UsersPage() {
         password: "",
         role: "teacher",
       });
+      setShowPassword(false);
       setShowCreateForm(false);
       setEditingUserId(null);
       loadUsers();
@@ -129,10 +132,14 @@ export default function UsersPage() {
   }
 
   async function handleDeleteUser(u: User) {
-    if (!confirm(`Delete user ${u.username}? This will deactivate the account.`)) return;
+    if (u.username === "meswcoe_admin" || u.username === "STAR_ARTS") {
+      toast.error("Cannot delete this protected user account");
+      return;
+    }
+    if (!confirm(`Permanently delete user ${u.username}? This action cannot be undone.`)) return;
     try {
       await deleteUser(u.id, user?.id);
-      toast.success('User deleted');
+      toast.success('User permanently deleted from system');
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -193,6 +200,21 @@ export default function UsersPage() {
               </div>
 
               <div className="flex items-center gap-4">
+                <button
+                  onClick={async () => {
+                    try {
+                      await exportUsersToExcel(users);
+                      toast.success("Users exported to Excel successfully");
+                    } catch (error) {
+                      console.error("Error exporting users:", error);
+                      toast.error("Failed to export users");
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  Export to Excel
+                </button>
                 <button
                   onClick={() => setShowCreateForm(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
@@ -311,7 +333,7 @@ export default function UsersPage() {
                   </label>
                   <div className="flex gap-2">
                     <input
-                      type="text"
+                      type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) =>
                         setFormData({ ...formData, password: e.target.value })
@@ -319,6 +341,24 @@ export default function UsersPage() {
                       placeholder="Enter or generate password"
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg transition-colors flex items-center gap-2"
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <>
+                          <EyeOff className="w-4 h-4" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4" />
+                          Show
+                        </>
+                      )}
+                    </button>
                     <button
                       type="button"
                       onClick={generatePassword}
@@ -344,6 +384,7 @@ export default function UsersPage() {
                     onClick={() => {
                       setShowCreateForm(false);
                       setEditingUserId(null);
+                      setShowPassword(false);
                       setFormData({
                         email: "",
                         username: "",
@@ -445,10 +486,15 @@ export default function UsersPage() {
                             <button onClick={() => handleEditUser(u)} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors" title="Edit user">
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            {u.username !== "admin" && (
+                            {u.username !== "STAR_ARTS" && u.username !== "meswcoe_admin" && (
                               <button onClick={() => handleDeleteUser(u)} className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors" title="Delete user">
                                 <Trash2 className="w-4 h-4" />
                               </button>
+                            )}
+                            {(u.username === "meswcoe_admin" || u.username === "STAR_ARTS") && (
+                              <div className="p-2 text-gray-400 cursor-not-allowed" title="Protected user - cannot be deleted">
+                                <Trash2 className="w-4 h-4" />
+                              </div>
                             )}
                           </div>
                         </td>

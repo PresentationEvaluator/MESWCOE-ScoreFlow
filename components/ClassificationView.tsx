@@ -68,17 +68,14 @@ export default function ClassificationView({
         const group = groups.find((g) => g.id === groupId);
         if (!group) return;
 
-        // Define classification and finance fields for mutual exclusivity
-        const classificationFields = ["classification_product", "classification_research", "classification_application", "classification_design"];
+        // Define finance fields for mutual exclusivity
         const financeFields = ["finance_institute", "finance_self", "finance_industry"];
+        const classificationFields = ["classification_product", "classification_research", "classification_application", "classification_design"];
+        const textFields = ["industry_name", "project_title", "project_type_in_house_sponsored"];
 
-        // If this is a checkbox being checked, uncheck others in the same section
-        let updateValue = value;
-        if (value && (classificationFields.includes(field as string) || financeFields.includes(field as string))) {
-            // This is checking a box, so uncheck others in this section
-            const fieldsToReset = classificationFields.includes(field as string) ? classificationFields : financeFields;
-            
-            // Optimistic update - uncheck all others in the section
+        // Handle classification fields (now multi-choice)
+        if (classificationFields.includes(field as string)) {
+            // Optimistic update for multi-choice
             setGroups((currentGroups) =>
                 currentGroups.map((g) =>
                     g.id === groupId
@@ -86,12 +83,7 @@ export default function ClassificationView({
                             ...g,
                             students: g.students.map((student) => {
                                 const updatedEval = { ...student.evaluation } as any;
-                                // Reset all fields in this section
-                                fieldsToReset.forEach((f) => {
-                                    updatedEval[f] = 0;
-                                });
-                                // Set the current field
-                                updatedEval[field] = 10;
+                                updatedEval[field] = value ? 10 : 0;
                                 return { ...student, evaluation: updatedEval };
                             }),
                         }
@@ -99,29 +91,104 @@ export default function ClassificationView({
                 ),
             );
 
-            // Update database for all fields in this section
+            // Update database
             try {
                 await Promise.all(
-                    group.students.map((s) => {
-                        const promises: Promise<any>[] = [];
-                        // Reset all other fields
-                        fieldsToReset.forEach((f) => {
-                            if (f !== field) {
-                                promises.push(updateEvaluation(s.id, f as any, 0));
-                            }
-                        });
-                        // Set the current field
-                        promises.push(updateEvaluation(s.id, field as any, 10));
-                        return Promise.all(promises);
-                    }).flat(),
+                    group.students.map((s) => updateEvaluation(s.id, field as any, value ? 10 : 0)),
                 );
             } catch (error) {
                 console.error("Error updating group field:", error);
                 toast.error("Failed to save field");
                 loadData();
             }
+        } 
+        // Handle finance fields (mutually exclusive)
+        else if (financeFields.includes(field as string)) {
+            if (value) {
+                // This is checking a box, so uncheck others in this section
+                setGroups((currentGroups) =>
+                    currentGroups.map((g) =>
+                        g.id === groupId
+                            ? {
+                                ...g,
+                                students: g.students.map((student) => {
+                                    const updatedEval = { ...student.evaluation } as any;
+                                    // Reset all fields in this section
+                                    financeFields.forEach((f) => {
+                                        updatedEval[f] = 0;
+                                    });
+                                    // Set the current field
+                                    updatedEval[field] = 10;
+                                    return { ...student, evaluation: updatedEval };
+                                }),
+                            }
+                            : g,
+                    ),
+                );
+
+                // Update database for all fields in this section
+                try {
+                    await Promise.all(
+                        group.students.map((s) => {
+                            const promises: Promise<any>[] = [];
+                            // Reset all other fields
+                            financeFields.forEach((f) => {
+                                if (f !== field) {
+                                    promises.push(updateEvaluation(s.id, f as any, 0));
+                                }
+                            });
+                            // Set the current field
+                            promises.push(updateEvaluation(s.id, field as any, 10));
+                            return Promise.all(promises);
+                        }).flat(),
+                    );
+                } catch (error) {
+                    console.error("Error updating group field:", error);
+                    toast.error("Failed to save field");
+                    loadData();
+                }
+            }
+        } else if (textFields.includes(field as string)) {
+            // Handle text fields with debouncing
+            setGroups((currentGroups) =>
+                currentGroups.map((g) =>
+                    g.id === groupId
+                        ? {
+                            ...g,
+                            students: g.students.map((student) => ({
+                                ...student,
+                                evaluation: {
+                                    ...(student.evaluation as Partial<Evaluation>),
+                                    [field]: value,
+                                } as any,
+                            })),
+                        }
+                        : g,
+                ),
+            );
+
+            // Clear existing debounce timer for this field
+            if (debounceTimers.current[field]) {
+                clearTimeout(debounceTimers.current[field]);
+            }
+
+            // Set new debounce timer
+            debounceTimers.current[field] = setTimeout(async () => {
+                setSavingStates((prev) => ({ ...prev, [field]: true }));
+                try {
+                    await Promise.all(
+                        group.students.map((s) => updateEvaluation(s.id, field as any, value)),
+                    );
+                } catch (error) {
+                    console.error("Error updating group field:", error);
+                    toast.error("Failed to save field");
+                    loadData();
+                } finally {
+                    setSavingStates((prev) => ({ ...prev, [field]: false }));
+                }
+            }, 800); // Wait 800ms after typing stops before saving
         } else {
-            // This is unchecking a box, allow it
+            // Handle other fields normally
             setGroups((currentGroups) =>
                 currentGroups.map((g) =>
                     g.id === groupId
@@ -180,7 +247,7 @@ export default function ClassificationView({
     if (!presentation) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="w-screen h-screen bg-gray-50 flex flex-col overflow-hidden">
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-full px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-100">
@@ -228,7 +295,7 @@ export default function ClassificationView({
                 </div>
             </header>
 
-            <main className="p-4 sm:p-6 lg:p-8">
+            <main className="p-4 sm:p-6 lg:p-8 flex-1 overflow-auto">
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
                     <table className="eval-table">
                         <thead className="bg-gray-50">
@@ -239,7 +306,7 @@ export default function ClassificationView({
                                 <th rowSpan={2} className="w-64 border-b-2">Final Project Title</th>
                                 <th rowSpan={2} className="w-40 border-b-2 text-center">In-Home/ Sponsored</th>
                                 <th colSpan={4} className="text-center bg-pink-50 border-b">Classification of project</th>
-                                <th colSpan={3} className="text-center bg-purple-50 border-b">Scope of Finance</th>
+                                <th colSpan={5} className="text-center bg-purple-50 border-b">Scope of Finance</th>
                             </tr>
                             <tr>
                                 <th className="w-20 text-center bg-pink-50">Product</th>
@@ -248,7 +315,8 @@ export default function ClassificationView({
                                 <th className="w-20 text-center bg-pink-50">Design</th>
                                 <th className="w-20 text-center bg-purple-50">Insti</th>
                                 <th className="w-20 text-center bg-purple-50">Self</th>
-                                <th className="w-20 text-center bg-purple-50">Industry</th>
+                                <th className="w-16 text-center bg-purple-50 border-r">Industry</th>
+                                <th className="w-56 text-center bg-purple-50">Industry Name</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -273,11 +341,12 @@ export default function ClassificationView({
                                                                 placeholder="Enter project title..."
                                                             />
                                                         </td>
-                                                        <td rowSpan={4} className="p-2 text-center border-r">
+                                                        <td rowSpan={4} className="p-0 text-center border-r">
                                                             <select
                                                                 value={evaluation.project_type_in_house_sponsored || ""}
                                                                 onChange={(e) => handleGroupFieldChange(group.id, "project_type_in_house_sponsored", e.target.value)}
-                                                                className="w-full text-sm p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-primary-500"
+                                                                className="w-full h-full text-sm p-3 border-gray-200 focus:ring-2 focus:ring-primary-500 rounded-md"
+                                                                style={{ minHeight: "100%" }}
                                                             >
                                                                 <option value="">Select...</option>
                                                                 <option value="In-Home">In-Home</option>
@@ -332,14 +401,39 @@ export default function ClassificationView({
                                                                 className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
                                                             />
                                                         </td>
-                                                        <td rowSpan={4} className="text-center bg-purple-50">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.finance_industry || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "finance_industry", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
-                                                            />
-                                                        </td>
+                                                        {evaluation.project_type_in_house_sponsored === "Sponsored" ? (
+                                                            <>
+                                                                <td rowSpan={4} className="text-center bg-purple-50 border-r">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={(evaluation.finance_industry || 0) > 0}
+                                                                        onChange={(e) => handleGroupFieldChange(group.id, "finance_industry", e.target.checked ? 10 : 0)}
+                                                                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                                    />
+                                                                </td>
+                                                                <td rowSpan={4} className="bg-purple-50 p-3 border-l border-gray-300">
+                                                                    <textarea
+                                                                        value={evaluation.industry_name || ""}
+                                                                        onChange={(e) => handleGroupFieldChange(group.id, "industry_name", e.target.value)}
+                                                                        placeholder="Enter industry name..."
+                                                                        className="w-full text-sm p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[100px] resize-none font-medium text-gray-700"
+                                                                    />
+                                                                </td>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <td rowSpan={4} className="text-center bg-gray-100 border-r">
+                                                                    <span className="text-xs text-gray-400">-</span>
+                                                                </td>
+                                                                <td rowSpan={4} className="bg-gray-100 p-3 border-l border-gray-300">
+                                                                    <textarea
+                                                                        disabled
+                                                                        placeholder="Available only for Sponsored"
+                                                                        className="w-full text-sm p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-400 min-h-[100px] resize-none cursor-not-allowed"
+                                                                    />
+                                                                </td>
+                                                            </>
+                                                        )}
                                                     </>
                                                 )}
                                             </tr>

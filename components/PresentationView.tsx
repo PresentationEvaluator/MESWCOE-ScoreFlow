@@ -17,7 +17,7 @@ import {
 } from "@/lib/database";
 import { calculateAllMarks } from "@/lib/calculations";
 import GroupManagement from "./GroupManagementWithRoles";
-import { Download, Users, ArrowLeft, ChevronDown } from "lucide-react";
+import { Download, Users, ArrowLeft, ChevronDown, Edit2 } from "lucide-react";
 import { exportPresentationToExcel } from "@/lib/excelExport";
 import {
   exportPresentation1Report,
@@ -452,6 +452,19 @@ export default function PresentationView({
                 >
                   <Users className="w-5 h-5" />
                   Project Classification
+                </button>
+              )}
+              {isReadOnly && (
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("readonly");
+                    router.push(`/presentation/${presentationId}?${params.toString()}`);
+                  }}
+                  className="btn bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  Edit Marks
                 </button>
               )}
               <button

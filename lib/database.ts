@@ -758,34 +758,50 @@ export async function updateEvaluation(
   field: keyof Evaluation,
   value: any,
 ): Promise<Evaluation> {
-  // First, check if evaluation exists
-  const { data: existing } = await supabase
-    .from("evaluations")
-    .select("*")
-    .eq("student_id", studentId)
-    .single();
-
-  if (existing) {
-    // Update existing evaluation
-    const { data, error } = await supabase
+  try {
+    // First, check if evaluation exists
+    const { data: existing, error: selectError } = await supabase
       .from("evaluations")
-      .update({ [field]: value })
+      .select("*")
       .eq("student_id", studentId)
-      .select()
       .single();
 
-    if (error) throw error;
-    return data;
-  } else {
-    // Create new evaluation
-    const { data, error } = await supabase
-      .from("evaluations")
-      .insert([{ student_id: studentId, [field]: value }])
-      .select()
-      .single();
+    if (selectError && selectError.code !== "PGRST116") {
+      // PGRST116 is "no rows returned" which is expected for new evaluations
+      throw selectError;
+    }
 
-    if (error) throw error;
-    return data;
+    if (existing) {
+      // Update existing evaluation
+      const { data, error } = await supabase
+        .from("evaluations")
+        .update({ [field]: value })
+        .eq("student_id", studentId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`Database error updating ${field}:`, error);
+        throw new Error(`Failed to update ${field}: ${error.message}`);
+      }
+      return data;
+    } else {
+      // Create new evaluation
+      const { data, error } = await supabase
+        .from("evaluations")
+        .insert([{ student_id: studentId, [field]: value }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`Database error inserting ${field}:`, error);
+        throw new Error(`Failed to insert ${field}: ${error.message}`);
+      }
+      return data;
+    }
+  } catch (error) {
+    console.error("updateEvaluation error:", error);
+    throw error;
   }
 }
 

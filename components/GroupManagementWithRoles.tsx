@@ -121,11 +121,11 @@ export default function GroupManagement({
       formData.get("student2") as string,
       formData.get("student3") as string,
       formData.get("student4") as string,
-    ];
+    ].filter((name) => name.trim()); // Remove empty names
 
-    // Validate all students have names
-    if (students.some((name) => !name.trim())) {
-      toast.error("All 4 student names are required");
+    // Validate at least 3 students
+    if (students.length < 3) {
+      toast.error("At least 3 student names are required");
       return;
     }
 
@@ -368,13 +368,13 @@ export default function GroupManagement({
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i}>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Student {i} <span className="text-red-500">*</span>
+                        Student {i} {i <= 3 && <span className="text-red-500">*</span>} {i === 4 && <span className="text-gray-500 text-xs">(optional)</span>}
                       </label>
                       <input
                         name={`student${i}`}
                         type="text"
                         placeholder={`Student ${i} name`}
-                        required
+                        required={i <= 3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       />
                     </div>
