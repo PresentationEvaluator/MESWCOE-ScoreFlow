@@ -91,15 +91,27 @@ export default function PresentationView({
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [showSemesterDropdown, setShowSemesterDropdown] = useState(false);
   const [academicYearId, setAcademicYearId] = useState<string>("");
+  const [lastLoadedAsTeacher, setLastLoadedAsTeacher] = useState<boolean | null>(null);
 
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
-    loadData();
-  }, [presentationId, user, isAdmin, isTeacher]);
+    // Only load if user is fully loaded (not null and auth is resolved)
+    if (user !== undefined) {
+      // If we previously loaded as a different authorization level, reload
+      // This prevents showing ALL groups when teacher first loads (before isTeacher resolves)
+      if (lastLoadedAsTeacher !== null && lastLoadedAsTeacher !== isTeacher) {
+        setGroups([]);
+        setSiblingGroups([]);
+      }
+      loadData();
+    }
+  }, [presentationId, user?.id, isTeacher]);
 
   async function loadData() {
     try {
+      setLoading(true);
+      
       // Load Current
       const presData = await getPresentation(presentationId);
 
@@ -117,6 +129,29 @@ export default function PresentationView({
       setPresentation(presData);
       setAcademicYearId(presData.academic_year_id);
       setGroups(groupsData);
+      setLastLoadedAsTeacher(isTeacher); // Track authorization level used for this load
+
+      // Authorization check: If teacher, verify all groups belong to them
+      // This prevents showing unauthorized groups even if data somehow got mixed up
+      if (isTeacher && user) {
+        const unauthorizedGroups = groupsData.filter(
+          (g) => g.guide_user_id !== user.id
+        );
+        
+        if (unauthorizedGroups.length > 0) {
+          toast.error("Security: Unauthorized group access detected. Clearing data.");
+          setGroups([]);
+          setLastLoadedAsTeacher(null); // Force reload on next auth change
+          router.push(`/dashboard/${presData.academic_year_id}`);
+          return;
+        }
+
+        if (groupsData.length === 0) {
+          toast.error("You don't have access to this presentation");
+          router.push(`/dashboard/${presData.academic_year_id}`);
+          return;
+        }
+      }
 
       // Fetch Sibling
       const allPres = await getPresentationsByAcademicYear(
@@ -146,6 +181,20 @@ export default function PresentationView({
         } else {
           sGroups = await getGroupsByPresentation(sibling.id);
         }
+        
+        // Authorization check for sibling groups
+        if (isTeacher && user) {
+          const unauthorizedSiblingGroups = sGroups.filter(
+            (g) => g.guide_user_id !== user.id
+          );
+          
+          if (unauthorizedSiblingGroups.length > 0) {
+            toast.error("Security: Unauthorized sibling group access detected.");
+            setSiblingGroups([]);
+            return;
+          }
+        }
+        
         setSiblingGroups(sGroups);
       }
     } catch (error) {
@@ -197,10 +246,10 @@ export default function PresentationView({
     debounceTimers.current[fieldKey] = setTimeout(async () => {
       setSavingStates((prev) => ({ ...prev, [fieldKey]: true }));
       try {
-        await updateEvaluation(studentId, field as any, numValue);
+        await updateEvaluation(studentId, field as any, numValue, isTeacher ? user?.id : undefined);
       } catch (error) {
         console.error("Error updating evaluation:", error);
-        toast.error("Failed to save mark");
+        toast.error(error instanceof Error ? error.message : "Failed to save mark");
         loadData();
       } finally {
         setSavingStates((prev) => ({ ...prev, [fieldKey]: false }));
@@ -237,7 +286,7 @@ export default function PresentationView({
     // Persist for each student
     try {
       await Promise.all(
-        group.students.map((s) => updateEvaluation(s.id, field as any, value)),
+        group.students.map((s) => updateEvaluation(s.id, field as any, value, isTeacher ? user?.id : undefined)),
       );
     } catch (error) {
       console.error("Error updating group field:", error);
@@ -362,19 +411,19 @@ export default function PresentationView({
   const isPres4 = presentation.name.endsWith("4");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 prevent-scroll">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-full px-3 sm:px-6 lg:px-8 py-4">
           {/* Logo and College Info */}
-          <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <Logo className="h-16 w-16" />
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-100">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1">
+              <Logo className="h-12 sm:h-16 w-12 sm:w-16 flex-shrink-0" />
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Modern Education Society's
                 </h2>
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Wadia College of Engineering, Pune.
                 </h2>
                 <p className="text-xs text-gray-600 mt-1">
@@ -385,49 +434,51 @@ export default function PresentationView({
                 </p>
               </div>
             </div>
-            <UserProfile />
+            <div className="w-full sm:w-auto">
+              <UserProfile />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
               <button
                 onClick={() => router.back()}
-                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
                   {presentation.name}
                 </h1>
-                <p className="text-sm text-gray-600">{presentation.semester}</p>
+                <p className="text-xs sm:text-sm text-gray-600">{presentation.semester}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {!isReadOnly && isPres1 && (
                 <button
                   onClick={() => setShowGroupManagement(true)}
-                  className="btn btn-secondary flex items-center gap-2"
+                  className="btn btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
-                  <Users className="w-5 h-5" />
-                  Manage Groups
+                  <Users className="w-4 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Manage Groups</span>
+                  <span className="sm:hidden">Groups</span>
                 </button>
               )}
               {/* Semester Reports Dropdown */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <button
                   onClick={() => setShowSemesterDropdown(!showSemesterDropdown)}
-                  className="btn btn-info flex items-center gap-2"
+                  className="btn btn-info flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
-                  <Download className="w-5 h-5" />
-                  Semester Report
+                  <Download className="w-4 h-5 flex-shrink-0" />
+                  <span className="truncate">Semester Report</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${showSemesterDropdown ? "rotate-180" : ""
-                      }`}
+                    className={`w-4 h-4 transition-transform flex-shrink-0 hidden sm:block ${showSemesterDropdown ? "rotate-180" : ""}`}
                   />
                 </button>
                 {showSemesterDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-full sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <button
                       onClick={handleExportSemester1}
                       className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 flex items-center gap-2"
@@ -448,10 +499,11 @@ export default function PresentationView({
               {isPres1 && (
                 <button
                   onClick={() => router.push(`/classification/${presentationId}`)}
-                  className="btn bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-2"
+                  className="btn bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-2 justify-center w-full sm:w-auto"
                 >
-                  <Users className="w-5 h-5" />
-                  Project Classification
+                  <Users className="w-4 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Project Classification</span>
+                  <span className="sm:hidden">Classification</span>
                 </button>
               )}
               {isReadOnly && (
@@ -461,19 +513,21 @@ export default function PresentationView({
                     params.delete("readonly");
                     router.push(`/presentation/${presentationId}?${params.toString()}`);
                   }}
-                  className="btn bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                  className="btn bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 justify-center w-full sm:w-auto"
                 >
-                  <Edit2 className="w-5 h-5" />
-                  Edit Marks
+                  <Edit2 className="w-4 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Edit Marks</span>
+                  <span className="sm:hidden">Edit</span>
                 </button>
               )}
               <button
                 onClick={handleExportExcel}
                 disabled={groups.length === 0}
-                className="btn btn-success flex items-center gap-2"
+                className="btn btn-success flex items-center gap-2 justify-center w-full sm:w-auto"
               >
-                <Download className="w-5 h-5" />
-                Export Excel
+                <Download className="w-4 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Export Excel</span>
+                <span className="sm:hidden">Export</span>
               </button>
             </div>
           </div>
@@ -481,11 +535,35 @@ export default function PresentationView({
       </header>
 
       {/* Main Content */}
-      <main className="p-4 sm:p-6 lg:p-8">
+      <main className="p-3 sm:p-6 lg:p-8">
+        {/* Runtime Authorization Guard: Filter out any unauthorized groups before rendering */}
+        {(() => {
+          let displayGroups = groups;
+          if (isTeacher && user) {
+            const unauthorizedInDisplay = groups.filter(
+              (g) => g.guide_user_id !== user.id
+            );
+            if (unauthorizedInDisplay.length > 0) {
+              console.warn(
+                "SECURITY: Unauthorized groups detected in display. Filtering out."
+              );
+              toast.error(
+                "Security breach detected: Unauthorized groups. Reloading..."
+              );
+              // Force reload
+              setGroups([]);
+              setLastLoadedAsTeacher(null);
+              setTimeout(() => loadData(), 100);
+              return null;
+            }
+          }
+          return null;
+        })()}
+        
         {groups.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
-            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Users className="w-12 sm:w-16 h-12 sm:h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
               No groups yet
             </h3>
             <p className="text-gray-600 mb-6">
@@ -501,7 +579,7 @@ export default function PresentationView({
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <div className="bg-white rounded-lg shadow overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
             <table className="eval-table">
               <thead>
                 <tr>

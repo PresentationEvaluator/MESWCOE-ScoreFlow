@@ -167,19 +167,19 @@ export default function AcademicYearDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 prevent-scroll">
       {/* Header with Logo */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {/* Logo and College Info */}
-          <div className="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <Logo className="h-16 w-16" />
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-100">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1">
+              <Logo className="h-12 sm:h-16 w-12 sm:w-16 flex-shrink-0" />
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Modern Education Society's
                 </h2>
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Wadia College of Engineering, Pune.
                 </h2>
                 <p className="text-xs text-gray-600 mt-1">
@@ -190,35 +190,38 @@ export default function AcademicYearDashboard() {
                 </p>
               </div>
             </div>
-            <UserProfile />
+            <div className="w-full sm:w-auto">
+              <UserProfile />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
               <button
                 onClick={() => router.push("/dashboard")}
-                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Academic Years
                 </h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-xs sm:text-sm text-gray-600">
                   Manage academic years and their presentations
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="w-full sm:w-auto">
               <button
                 onClick={() => setShowCreateModal(true)}
                 disabled={!isAdmin}
                 title={!isAdmin ? "Only admins can create academic years" : ""}
-                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-5 h-5" />
-                New Academic Year
+                <Plus className="w-4 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">New Academic Year</span>
+                <span className="sm:hidden">New Year</span>
               </button>
             </div>
           </div>
@@ -226,14 +229,14 @@ export default function AcademicYearDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {academicYears.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-12 sm:py-16">
+            <Calendar className="w-12 sm:w-16 h-12 sm:h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
               No academic years yet
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">
               Get started by creating your first academic year
             </p>
             <button
@@ -246,22 +249,22 @@ export default function AcademicYearDashboard() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {academicYears.map((year) => (
               <div
                 key={year.id}
-                className="card hover:shadow-lg transition-shadow"
+                className="card hover:shadow-lg transition-shadow flex flex-col"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
                       {year.name}
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       {year.start_year} - {year.end_year}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0 ml-2">
                     {isAdmin && (
                       <>
                         <button
@@ -285,12 +288,12 @@ export default function AcademicYearDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-                  <FileSpreadsheet className="w-4 h-4" />
+                <div className="flex items-center gap-2 mb-4 text-xs sm:text-sm text-gray-600">
+                  <FileSpreadsheet className="w-4 h-4 flex-shrink-0" />
                   <span>{presentationCounts[year.id] || 0} Presentations</span>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-auto">
                   <button
                     onClick={() => router.push(`/academic-years/${year.id}`)}
                     className="btn btn-primary flex-1"
@@ -308,7 +311,7 @@ export default function AcademicYearDashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
               Create New Academic Year
             </h2>
             <form onSubmit={handleCreateAcademicYear}>
@@ -344,7 +347,7 @@ export default function AcademicYearDashboard() {
                   />
                 </div>
               </div>
-              <div className="flex gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -365,7 +368,7 @@ export default function AcademicYearDashboard() {
       {showEditModal && editingYear && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
               Edit Academic Year
             </h2>
             <form onSubmit={handleEditAcademicYear}>
@@ -401,7 +404,7 @@ export default function AcademicYearDashboard() {
                   />
                 </div>
               </div>
-              <div className="flex gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => {

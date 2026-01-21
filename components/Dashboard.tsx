@@ -7,6 +7,7 @@ import {
   getPresentationsByAcademicYear,
   getPresentationStats,
   getAcademicYear,
+  getPresentationsWithGroupsForTeacher,
 } from "@/lib/database";
 import { exportAnnualReport } from "@/lib/excelExport";
 import {
@@ -55,7 +56,9 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
     try {
       const [yearData, presentationsData] = await Promise.all([
         getAcademicYear(academicYearId),
-        getPresentationsByAcademicYear(academicYearId),
+        isTeacher && user
+          ? getPresentationsWithGroupsForTeacher(academicYearId, user.id)
+          : getPresentationsByAcademicYear(academicYearId),
       ]);
 
       setAcademicYear(yearData);
@@ -163,19 +166,19 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-blue-50 prevent-scroll">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {/* Logo and College Info */}
-          <div className="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <Logo className="h-16 w-16" />
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-100">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1">
+              <Logo className="h-12 sm:h-16 w-12 sm:w-16 flex-shrink-0" />
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Modern Education Society's
                 </h2>
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
                   Wadia College of Engineering, Pune.
                 </h2>
                 <p className="text-xs text-gray-600 mt-1">
@@ -186,73 +189,74 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                 </p>
               </div>
             </div>
-            <UserProfile />
+            <div className="w-full sm:w-auto">
+              <UserProfile />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
               <button
                 onClick={() => router.push("/academic-years")}
-                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
                   {academicYear.name}
                 </h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-xs sm:text-sm text-gray-600">
                   Manage evaluations and view presentations
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-auto">
                 <button
                   onClick={() => setShowSemesterDropdown(!showSemesterDropdown)}
-                  className="btn btn-info flex items-center gap-2"
+                  className="btn btn-info flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
-                  <Download className="w-5 h-5" />
-                  Semester Report
+                  <Download className="w-4 h-5 flex-shrink-0" />
+                  <span className="truncate">Semester Report</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${showSemesterDropdown ? "rotate-180" : ""
-                      }`}
+                    className={`w-4 h-4 transition-transform flex-shrink-0 hidden sm:block ${showSemesterDropdown ? "rotate-180" : ""}`}
                   />
                 </button>
                 {showSemesterDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-full sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <button
                       onClick={handleExportSemester1}
-                      className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 flex items-center gap-2 text-sm"
                     >
-                      <Download className="w-4 h-4" />
-                      Download Semester 1 Report
+                      <Download className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">Semester 1 Report</span>
                     </button>
                     <button
                       onClick={handleExportSemester2}
-                      className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center gap-2 text-sm"
                     >
-                      <Download className="w-4 h-4" />
-                      Download Semester 2 Report
+                      <Download className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">Semester 2 Report</span>
                     </button>
                   </div>
                 )}
               </div>
               <button
                 onClick={handleDownloadAnnualReport}
-                className="btn btn-success flex items-center gap-2"
+                className="btn btn-success flex items-center gap-2 w-full sm:w-auto justify-center"
               >
-                <Download className="w-5 h-5" />
-                Annual Report
+                <Download className="w-4 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Annual Report</span>
               </button>
               <button
                 onClick={() =>
                   router.push(`/marks-entry?academicYearId=${academicYearId}`)
                 }
-                className="btn btn-primary flex items-center gap-2"
+                className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
               >
-                <Edit className="w-5 h-5" />
-                Marks Entry
+                <Edit className="w-4 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Marks Entry</span>
               </button>
             </div>
           </div>
@@ -260,16 +264,16 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12">
         {presentations.length === 0 ? (
-          <div className="text-center py-16">
+          <div className="text-center py-12 sm:py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <FileSpreadsheet className="w-8 h-8 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               No presentations yet
             </h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            <p className="text-sm sm:text-base text-gray-600 mb-8 max-w-md mx-auto px-4">
               Create presentations and add groups to start entering evaluation
               marks.
             </p>
@@ -285,13 +289,13 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
           </div>
         ) : (
           <>
-            <div className="mb-8">
-              <div className="flex items-center gap-3">
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-start sm:items-center gap-3">
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Presentations
                   </h2>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-xs sm:text-sm text-gray-600">
                     {presentations.length} presentation
                     {presentations.length !== 1 ? "s" : ""} available for
                     evaluation
@@ -300,7 +304,7 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
               {presentations.map((presentation) => {
                 const presentationNumber = parseInt(
                   presentation.name.match(/\d+/)?.[0] || "0",
@@ -321,45 +325,45 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                 return (
                   <div
                     key={presentation.id}
-                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    className="group cursor-pointer transform transition-all duration-300 hover:scale-105 active:scale-95"
                     onClick={() =>
                       router.push(
                         `/presentation/${encodeURIComponent(presentation.id)}?readonly=true`,
                       )
                     }
                   >
-                    <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow bg-white">
+                    <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow bg-white h-full flex flex-col">
                       {/* Gradient Header */}
                       <div
-                        className={`h-24 bg-gradient-to-br ${colors[presentationNumber] || colors[1]
-                          } relative`}
+                        className={`h-20 sm:h-24 bg-gradient-to-br ${colors[presentationNumber] || colors[1]
+                          } relative flex-shrink-0`}
                       >
                         <div className="absolute inset-0 opacity-20">
                           <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full -mr-10 -mt-10"></div>
                         </div>
-                        <div className="absolute inset-0 flex items-end p-4">
-                          <h3 className="text-2xl font-bold text-white">
+                        <div className="absolute inset-0 flex items-end p-3 sm:p-4">
+                          <h3 className="text-xl sm:text-2xl font-bold text-white truncate">
                             {presentation.name}
                           </h3>
                         </div>
                       </div>
 
                       {/* Content */}
-                      <div className="p-5">
-                        <div className="flex items-center gap-2 mb-4">
+                      <div className="p-3 sm:p-5 flex flex-col flex-grow">
+                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
                           {presentation.semester && (
-                            <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                            <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
                               {presentation.semester}
                             </span>
                           )}
                         </div>
 
-                        <div className="space-y-3 mb-5">
+                        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-5 flex-grow">
                           <div className="flex items-center gap-3 text-sm">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 flex-shrink-0">
                               <Users className="w-4 h-4 text-blue-600" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-gray-500 text-xs">Groups</p>
                               <p className="text-lg font-semibold text-gray-900">
                                 {stats[presentation.id]?.groupCount || 0}
@@ -367,10 +371,10 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                             </div>
                           </div>
                           <div className="flex items-center gap-3 text-sm">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 flex-shrink-0">
                               <GraduationCap className="w-4 h-4 text-green-600" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-gray-500 text-xs">Students</p>
                               <p className="text-lg font-semibold text-gray-900">
                                 {stats[presentation.id]?.studentCount || 0}

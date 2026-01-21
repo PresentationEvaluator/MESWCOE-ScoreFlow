@@ -9,6 +9,7 @@ import {
   getAllAcademicYears,
   getGroupsByPresentation,
   getGroupsByPresentationForTeacher,
+  getPresentationsWithGroupsForTeacher,
 } from "@/lib/database";
 import { exportAnnualReportFormattedAndSeparated, exportAnnualReportBySemester } from "@/lib/excelExportFormatted";
 import {
@@ -83,7 +84,9 @@ export default function ReportsPage() {
 
   const loadPresentations = async (academicYearId: string) => {
     try {
-      const presen = await getPresentationsByAcademicYear(academicYearId);
+      const presen = isTeacher && user
+        ? await getPresentationsWithGroupsForTeacher(academicYearId, user.id)
+        : await getPresentationsByAcademicYear(academicYearId);
       setPresentations(presen);
 
       // Auto-select the first presentation if available
@@ -103,8 +106,14 @@ export default function ReportsPage() {
     try {
       let loadedGroups: Group[] = [];
 
-      // For admins: Load all groups
-      loadedGroups = await getGroupsByPresentation(presentationId);
+      // Load groups based on user role
+      if (isTeacher && user) {
+        // Teachers see only their groups
+        loadedGroups = await getGroupsByPresentationForTeacher(presentationId, user.id);
+      } else {
+        // Admins see all groups
+        loadedGroups = await getGroupsByPresentation(presentationId);
+      }
 
       setGroups(loadedGroups);
 

@@ -52,6 +52,13 @@ export default function ClassificationView({
                     ? await getGroupsByPresentationForTeacher(presentationId, user.id)
                     : await getGroupsByPresentation(presentationId);
             setGroups(gData);
+
+            // Check if teacher has access to this presentation
+            if (user?.role === "teacher" && user && gData.length === 0) {
+                toast.error("You don't have access to this presentation");
+                router.push(`/dashboard/${pData.academic_year_id}`);
+                return;
+            }
         } catch (error) {
             console.error("Error loading classification data:", error);
             toast.error("Failed to load data");
@@ -94,11 +101,11 @@ export default function ClassificationView({
             // Update database
             try {
                 await Promise.all(
-                    group.students.map((s) => updateEvaluation(s.id, field as any, value ? 10 : 0)),
+                    group.students.map((s) => updateEvaluation(s.id, field as any, value ? 10 : 0, user?.id)),
                 );
             } catch (error) {
                 console.error("Error updating group field:", error);
-                toast.error("Failed to save field");
+                toast.error(error instanceof Error ? error.message : "Failed to save field");
                 loadData();
             }
         } 
@@ -134,17 +141,17 @@ export default function ClassificationView({
                             // Reset all other fields
                             financeFields.forEach((f) => {
                                 if (f !== field) {
-                                    promises.push(updateEvaluation(s.id, f as any, 0));
+                                    promises.push(updateEvaluation(s.id, f as any, 0, user?.id));
                                 }
                             });
                             // Set the current field
-                            promises.push(updateEvaluation(s.id, field as any, 10));
+                            promises.push(updateEvaluation(s.id, field as any, 10, user?.id));
                             return Promise.all(promises);
                         }).flat(),
                     );
                 } catch (error) {
                     console.error("Error updating group field:", error);
-                    toast.error("Failed to save field");
+                    toast.error(error instanceof Error ? error.message : "Failed to save field");
                     loadData();
                 }
             }
@@ -177,11 +184,11 @@ export default function ClassificationView({
                 setSavingStates((prev) => ({ ...prev, [field]: true }));
                 try {
                     await Promise.all(
-                        group.students.map((s) => updateEvaluation(s.id, field as any, value)),
+                        group.students.map((s) => updateEvaluation(s.id, field as any, value, user?.id)),
                     );
                 } catch (error) {
                     console.error("Error updating group field:", error);
-                    toast.error("Failed to save field");
+                    toast.error(error instanceof Error ? error.message : "Failed to save field");
                     loadData();
                 } finally {
                     setSavingStates((prev) => ({ ...prev, [field]: false }));
@@ -208,7 +215,7 @@ export default function ClassificationView({
 
             try {
                 await Promise.all(
-                    group.students.map((s) => updateEvaluation(s.id, field as any, value)),
+                    group.students.map((s) => updateEvaluation(s.id, field as any, value, user?.id)),
                 );
             } catch (error) {
                 console.error("Error updating group field:", error);
@@ -247,56 +254,60 @@ export default function ClassificationView({
     if (!presentation) return null;
 
     return (
-        <div className="w-screen h-screen bg-gray-50 flex flex-col overflow-hidden">
+        <div className="w-screen h-screen bg-gray-50 flex flex-col overflow-hidden prevent-scroll">
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-full px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <Logo className="h-16 w-16" />
-                            <div>
-                                <h2 className="text-sm font-semibold text-gray-900">M.E.S. Wadia College of Engineering, Pune.</h2>
+                <div className="max-w-full px-3 sm:px-6 lg:px-8 py-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-100">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1">
+                            <Logo className="h-12 sm:h-16 w-12 sm:w-16 flex-shrink-0" />
+                            <div className="min-w-0">
+                                <h2 className="text-xs sm:text-sm font-semibold text-gray-900">M.E.S. Wadia College of Engineering, Pune.</h2>
                                 <p className="text-xs text-gray-600 mt-1">Project Classification Dashboard</p>
                             </div>
                         </div>
-                        <UserProfile />
+                        <div className="w-full sm:w-auto">
+                            <UserProfile />
+                        </div>
                     </div>
 
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
                             <button
                                 onClick={() => router.back()}
-                                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Project Classification</h1>
-                                <p className="text-sm text-gray-600">{presentation.name} - {presentation.semester}</p>
+                            <div className="min-w-0">
+                                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">Project Classification</h1>
+                                <p className="text-xs sm:text-sm text-gray-600 truncate">{presentation.name} - {presentation.semester}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <button
                                 onClick={() => router.push(`/presentation/${presentationId}`)}
-                                className="btn btn-secondary flex items-center gap-2"
+                                className="btn btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center"
                             >
-                                <LayoutDashboard className="w-5 h-5" />
-                                Marks Dashboard
+                                <LayoutDashboard className="w-4 h-5 flex-shrink-0" />
+                                <span className="hidden sm:inline">Marks Dashboard</span>
+                                <span className="sm:hidden">Marks</span>
                             </button>
                             <button
                                 onClick={handleExportClassification}
                                 disabled={groups.length === 0}
-                                className="btn bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-2"
+                                className="btn bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-2 w-full sm:w-auto justify-center"
                             >
-                                <Download className="w-5 h-5" />
-                                Project Classification download
+                                <Download className="w-4 h-5 flex-shrink-0" />
+                                <span className="hidden sm:inline">Classification Download</span>
+                                <span className="sm:hidden">Download</span>
                             </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="p-4 sm:p-6 lg:p-8 flex-1 overflow-auto">
-                <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <main className="p-3 sm:p-6 lg:p-8 flex-1 overflow-auto">
+                <div className="bg-white rounded-lg shadow overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
                     <table className="eval-table">
                         <thead className="bg-gray-50">
                             <tr>

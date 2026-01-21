@@ -42,6 +42,21 @@ export async function createAcademicYear(
     .single();
 
   if (error) throw error;
+
+  // Auto-create 4 presentations for this academic year
+  const presentations = [
+    { name: "Presentation 1", semester: "Semester 1", academic_year_id: data.id },
+    { name: "Presentation 2", semester: "Semester 1", academic_year_id: data.id },
+    { name: "Presentation 3", semester: "Semester 2", academic_year_id: data.id },
+    { name: "Presentation 4", semester: "Semester 2", academic_year_id: data.id },
+  ];
+
+  const { error: presError } = await supabase
+    .from("presentations")
+    .insert(presentations);
+
+  if (presError) throw presError;
+
   return data;
 }
 
@@ -400,40 +415,48 @@ export async function getGroupsByPresentationForTeacher(
     .order("group_number", { ascending: true });
 
   if (groupsError) throw groupsError;
+  if (!groups || groups.length === 0) return [];
 
-  const groupsWithStudents: GroupWithStudents[] = [];
+  const groupIds = groups.map(g => g.id);
+  
+  // Get all students for all groups at once (prevents N+1 queries)
+  const { data: allStudents, error: studentsError } = await supabase
+    .from("students")
+    .select("*")
+    .in("group_id", groupIds)
+    .order("position", { ascending: true });
 
-  for (const group of groups || []) {
-    const { data: students, error: studentsError } = await supabase
-      .from("students")
-      .select("*")
-      .eq("group_id", group.id)
-      .order("position", { ascending: true });
+  if (studentsError) throw studentsError;
 
-    if (studentsError) throw studentsError;
+  const studentIds = (allStudents || []).map(s => s.id);
+  
+  // Get all evaluations at once (batch query instead of per-student)
+  const { data: allEvaluations, error: evaluationsError } = await supabase
+    .from("evaluations")
+    .select("*")
+    .in("student_id", studentIds.length > 0 ? studentIds : ["null"]);
 
-    const studentsWithEvaluations: StudentWithEvaluation[] = [];
+  if (evaluationsError) throw evaluationsError;
 
-    for (const student of students || []) {
-      const { data: evaluation } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("student_id", student.id)
-        .single();
+  // Build maps for O(1) lookup
+  const evaluationMap = new Map((allEvaluations || []).map(e => [e.student_id, e]));
+  const studentsByGroupId = new Map<string, StudentWithEvaluation[]>();
 
-      studentsWithEvaluations.push({
-        ...student,
-        evaluation: evaluation || undefined,
-      });
+  for (const student of allStudents || []) {
+    if (!studentsByGroupId.has(student.group_id)) {
+      studentsByGroupId.set(student.group_id, []);
     }
-
-    groupsWithStudents.push({
-      ...group,
-      students: studentsWithEvaluations,
+    studentsByGroupId.get(student.group_id)!.push({
+      ...student,
+      evaluation: evaluationMap.get(student.id) || undefined,
     });
   }
 
-  return groupsWithStudents;
+  // Combine groups with their students
+  return groups.map(group => ({
+    ...group,
+    students: studentsByGroupId.get(group.id) || [],
+  }));
 }
 
 export async function getGroupsByPresentation(
@@ -446,40 +469,48 @@ export async function getGroupsByPresentation(
     .order("group_number", { ascending: true });
 
   if (groupsError) throw groupsError;
+  if (!groups || groups.length === 0) return [];
 
-  const groupsWithStudents: GroupWithStudents[] = [];
+  const groupIds = groups.map(g => g.id);
+  
+  // Get all students for all groups at once (prevents N+1 queries)
+  const { data: allStudents, error: studentsError } = await supabase
+    .from("students")
+    .select("*")
+    .in("group_id", groupIds)
+    .order("position", { ascending: true });
 
-  for (const group of groups || []) {
-    const { data: students, error: studentsError } = await supabase
-      .from("students")
-      .select("*")
-      .eq("group_id", group.id)
-      .order("position", { ascending: true });
+  if (studentsError) throw studentsError;
 
-    if (studentsError) throw studentsError;
+  const studentIds = (allStudents || []).map(s => s.id);
+  
+  // Get all evaluations at once (batch query instead of per-student)
+  const { data: allEvaluations, error: evaluationsError } = await supabase
+    .from("evaluations")
+    .select("*")
+    .in("student_id", studentIds.length > 0 ? studentIds : ["null"]);
 
-    const studentsWithEvaluations: StudentWithEvaluation[] = [];
+  if (evaluationsError) throw evaluationsError;
 
-    for (const student of students || []) {
-      const { data: evaluation } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("student_id", student.id)
-        .single();
+  // Build maps for O(1) lookup
+  const evaluationMap = new Map((allEvaluations || []).map(e => [e.student_id, e]));
+  const studentsByGroupId = new Map<string, StudentWithEvaluation[]>();
 
-      studentsWithEvaluations.push({
-        ...student,
-        evaluation: evaluation || undefined,
-      });
+  for (const student of allStudents || []) {
+    if (!studentsByGroupId.has(student.group_id)) {
+      studentsByGroupId.set(student.group_id, []);
     }
-
-    groupsWithStudents.push({
-      ...group,
-      students: studentsWithEvaluations,
+    studentsByGroupId.get(student.group_id)!.push({
+      ...student,
+      evaluation: evaluationMap.get(student.id) || undefined,
     });
   }
 
-  return groupsWithStudents;
+  // Combine groups with their students
+  return groups.map(group => ({
+    ...group,
+    students: studentsByGroupId.get(group.id) || [],
+  }));
 }
 
 export async function deleteGroup(id: string): Promise<void> {
@@ -757,8 +788,30 @@ export async function updateEvaluation(
   studentId: string,
   field: keyof Evaluation,
   value: any,
+  teacherId?: string,
 ): Promise<Evaluation> {
   try {
+    // Authorization check: if teacherId provided, verify teacher owns this group
+    if (teacherId) {
+      const { data: student } = await supabase
+        .from("students")
+        .select("group_id")
+        .eq("id", studentId)
+        .single();
+
+      if (student) {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("guide_user_id")
+          .eq("id", student.group_id)
+          .single();
+
+        if (!group || group.guide_user_id !== teacherId) {
+          throw new Error("Unauthorized: You can only modify your own groups");
+        }
+      }
+    }
+
     // First, check if evaluation exists
     const { data: existing, error: selectError } = await supabase
       .from("evaluations")

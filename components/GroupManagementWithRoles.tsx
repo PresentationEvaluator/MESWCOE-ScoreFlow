@@ -39,6 +39,7 @@ export default function GroupManagement({
   const [selectedGuideId, setSelectedGuideId] = useState("");
   const [guideSearchInput, setGuideSearchInput] = useState("");
   const [showGuideDropdown, setShowGuideDropdown] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -141,6 +142,14 @@ export default function GroupManagement({
     }
 
     try {
+      // Prevent duplicate submissions on multiple clicks
+      if (isCreatingGroup) {
+        toast.error("Group creation in progress... please wait");
+        return;
+      }
+
+      setIsCreatingGroup(true);
+
       const nextGroupNumber =
         groups.length > 0
           ? Math.max(...groups.map((g) => g.group_number)) + 1
@@ -163,10 +172,12 @@ export default function GroupManagement({
       setGuideSearchInput("");
       setSelectedGuideId("");
       setShowGuideDropdown(false);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error("Error creating group:", error);
       toast.error((error as any)?.message || String(error) || "Failed to create group");
+    } finally {
+      setIsCreatingGroup(false);
     }
   }
 
@@ -385,9 +396,10 @@ export default function GroupManagement({
                 <div className="flex gap-2 pt-4">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                    disabled={isCreatingGroup}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                   >
-                    Create Group
+                    {isCreatingGroup ? "Creating..." : "Create Group"}
                   </button>
                   <button
                     type="button"

@@ -46,20 +46,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 flex items-center justify-center p-3 sm:p-4 prevent-scroll">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
           {/* Logo - Centered at top of card */}
-          <div className="flex justify-center mb-8">
-            <Logo className="h-24 w-24" />
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <Logo className="h-20 sm:h-24 w-20 sm:w-24" />
           </div>
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               BE Project Evaluation
             </h1>
-            <p className="text-gray-600 text-sm mt-2">Management System</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-2">Management System</p>
           </div>
 
           {/* Form */}
@@ -78,7 +78,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed text-base"
               />
             </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 disabled={loading}
-                className="w-full pr-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full pr-10 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed text-base"
               />
 
               <button
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 onClick={() => setShowPassword((p) => !p)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
-                className="absolute right-2 bottom-3 flex items-center px-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                className="absolute right-2 bottom-3 sm:bottom-4 flex items-center px-2 text-gray-500 hover:text-gray-700 focus:outline-none p-2"
               >
                 {showPassword ? (
                   // Eye (open) icon when password is visible
@@ -136,7 +136,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 rounded-lg transition duration-200"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 rounded-lg transition duration-200 min-h-[44px]"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPresentationAccess } from "@/lib/reportAuthorization";
+import { verifySession } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { exportAnnualReportFormattedAndSeparated } from "@/lib/excelExportFormatted";
 
 /**
@@ -20,15 +21,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note: For annual reports, we'll verify by checking if user has access to at least one presentation
-    // This is handled in the frontend, but we add extra safety here
-    console.log(
-      `Annual report export requested by user ${userId} for academic year ${academicYearId}`
-    );
+    // Verify session validity
+    const isSessionValid = await verifySession(userId, token);
+    if (!isSessionValid) {
+      return NextResponse.json(
+        { error: "Invalid session" },
+        { status: 401 }
+      );
+    }
 
-    // Backend verification is primarily handled through the frontend checks
-    // The export function itself will work based on the database structure
-    // Teachers' data is automatically filtered by the database queries
+    // Get user role
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Admins always have access
+    if (user.role === "admin") {
+      console.log(
+        `Annual report export authorized for admin user ${userId} for academic year ${academicYearId}`
+      );
+    } else if (user.role === "teacher") {
+      // Teachers can only export if they have groups in at least one presentation in this academic year
+      const { data: presentations } = await supabase
+        .from("presentations")
+        .select("id")
+        .eq("academic_year_id", academicYearId);
+
+      if (!presentations || presentations.length === 0) {
+        return NextResponse.json(
+          { error: "No presentations found for this academic year" },
+          { status: 404 }
+        );
+      }
+
+      const presentationIds = presentations.map(p => p.id);
+      const { data: groups, error: groupsError } = await supabase
+        .from("groups")
+        .select("id")
+        .in("presentation_id", presentationIds)
+        .eq("guide_user_id", userId)
+        .limit(1);
+
+      if (groupsError || !groups || groups.length === 0) {
+        console.warn(
+          `Unauthorized annual report export attempt by teacher ${userId} for academic year ${academicYearId} - no groups found`
+        );
+        return NextResponse.json(
+          { error: "Unauthorized: You have no groups in this academic year" },
+          { status: 403 }
+        );
+      }
+
+      console.log(
+        `Annual report export authorized for teacher user ${userId} for academic year ${academicYearId}`
+      );
+    } else {
+      return NextResponse.json(
+        { error: "Invalid user role" },
+        { status: 403 }
+      );
+    }
 
     // Return success - the actual file download happens on the client side
     return NextResponse.json({
