@@ -41,6 +41,18 @@ export default function InputDashboard({
     }
   }, [academicYearId]);
 
+  // Reload data when the page regains focus (user returns from presentation view)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (academicYearId) {
+        loadData();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [academicYearId]);
+
   async function loadData() {
     try {
       const [yearData, presentationsData] = await Promise.all([
@@ -179,7 +191,7 @@ export default function InputDashboard({
 
                 <button
                   onClick={() =>
-                    router.push(`/presentation/${encodeURIComponent(presentation.id)}`)
+                    router.push(`/presentation/${presentation.id}`)
                   }
                   className="w-full btn btn-secondary mt-auto"
                 >

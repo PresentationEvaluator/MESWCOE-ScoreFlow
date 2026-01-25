@@ -989,24 +989,9 @@ export async function getPresentationsWithGroupsForTeacher(
   academicYearId: string,
   teacherId: string,
 ): Promise<Presentation[]> {
-  // Get presentations for the academic year
+  // Teachers should see ALL presentations in their academic year
+  // They can manage groups and view data for any presentation
+  // The filtering by their groups happens at the group level, not presentation level
   const presentations = await getPresentationsByAcademicYear(academicYearId);
-
-  // Filter presentations that have groups for this teacher
-  const filteredPresentations: Presentation[] = [];
-
-  for (const presentation of presentations) {
-    const { data: groups } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("presentation_id", presentation.id)
-      .eq("guide_user_id", teacherId)
-      .limit(1);
-
-    if (groups && groups.length > 0) {
-      filteredPresentations.push(presentation);
-    }
-  }
-
-  return filteredPresentations;
+  return presentations;
 }

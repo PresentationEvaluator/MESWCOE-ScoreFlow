@@ -87,6 +87,7 @@ export default function PresentationView({
   const [siblingGroups, setSiblingGroups] = useState<GroupWithStudents[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [showSemesterDropdown, setShowSemesterDropdown] = useState(false);
@@ -146,11 +147,8 @@ export default function PresentationView({
           return;
         }
 
-        if (groupsData.length === 0) {
-          toast.error("You don't have access to this presentation");
-          router.push(`/dashboard/${presData.academic_year_id}`);
-          return;
-        }
+        // Teachers can view presentations even with no groups - they might be creating them
+        // Only redirect if there's unauthorized data
       }
 
       // Fetch Sibling
@@ -199,7 +197,10 @@ export default function PresentationView({
       }
     } catch (error) {
       console.error("Error loading presentation:", error);
-      toast.error("Failed to load presentation data");
+      const errorMessage = error instanceof Error ? error.message : "Presentation not found";
+      setError(errorMessage);
+      setPresentation(null);
+      toast.error("Failed to load presentation: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -390,6 +391,26 @@ export default function PresentationView({
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading evaluation data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <p className="text-lg font-semibold text-red-800 mb-2">Error Loading Presentation</p>
+            <p className="text-red-700 mb-4">{error}</p>
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
