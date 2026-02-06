@@ -81,6 +81,51 @@ export async function getAcademicYear(id: string): Promise<AcademicYear> {
   return data;
 }
 
+/**
+ * Get academic year by slug or ID
+ * Handles both UUID and short slug identifiers
+ */
+export async function getAcademicYearBySlugOrId(
+  slugOrId: string,
+): Promise<AcademicYear> {
+  // First try to get by ID directly (in case it's a UUID)
+  if (slugOrId.includes("-") || slugOrId.length > 3) {
+    try {
+      const { data, error } = await supabase
+        .from("academic_years")
+        .select("*")
+        .eq("id", slugOrId)
+        .single();
+
+      if (data) return data;
+    } catch {
+      // Continue to slug lookup if ID lookup fails
+    }
+  }
+
+  // If not found or slug provided, search by slug pattern
+  // The slug is generated from the first part of the UUID
+  // We need to do a broader search since we can't reverse the slug hash
+  const { data: allYears, error } = await supabase
+    .from("academic_years")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Find matching year by comparing generated slug
+  const { generateSlug } = await import("./slugs");
+  const matchedYear = allYears?.find(
+    (year) => generateSlug(year.id).toUpperCase() === slugOrId.toUpperCase(),
+  );
+
+  if (matchedYear) return matchedYear;
+
+  throw new Error(
+    `Academic year not found with slug or ID: ${slugOrId}`,
+  );
+}
+
 export async function updateAcademicYear(
   id: string,
   input: Partial<CreateAcademicYearInput>,
@@ -214,6 +259,49 @@ export async function getPresentation(id: string): Promise<Presentation> {
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Get presentation by slug or ID
+ * Handles both UUID and short slug identifiers
+ */
+export async function getPresentationBySlugOrId(
+  slugOrId: string,
+): Promise<Presentation> {
+  // First try to get by ID directly (in case it's a UUID)
+  if (slugOrId.includes("-") || slugOrId.length > 3) {
+    try {
+      const { data, error } = await supabase
+        .from("presentations")
+        .select("*")
+        .eq("id", slugOrId)
+        .single();
+
+      if (data) return data;
+    } catch {
+      // Continue to slug lookup if ID lookup fails
+    }
+  }
+
+  // If not found or slug provided, search by slug pattern
+  const { data: allPresentations, error } = await supabase
+    .from("presentations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Find matching presentation by comparing generated slug
+  const { generateSlug } = await import("./slugs");
+  const matchedPresentation = allPresentations?.find(
+    (pres) => generateSlug(pres.id).toUpperCase() === slugOrId.toUpperCase(),
+  );
+
+  if (matchedPresentation) return matchedPresentation;
+
+  throw new Error(
+    `Presentation not found with slug or ID: ${slugOrId}`,
+  );
 }
 
 export async function deletePresentation(

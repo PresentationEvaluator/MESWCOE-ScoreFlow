@@ -40,6 +40,7 @@ export interface AuthContextType {
 // =====================================================
 export interface AcademicYear {
   id: string;
+  slug?: string; // Short URL-friendly identifier
   name: string;
   start_year: number;
   end_year: number;
@@ -49,6 +50,7 @@ export interface AcademicYear {
 
 export interface Presentation {
   id: string;
+  slug?: string; // Short URL-friendly identifier
   name: string;
   semester: string | null;
   academic_year_id: string;

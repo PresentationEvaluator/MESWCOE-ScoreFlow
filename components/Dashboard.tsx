@@ -7,6 +7,7 @@ import {
   getPresentationsByAcademicYear,
   getPresentationStats,
   getAcademicYear,
+  getAcademicYearBySlugOrId,
   getPresentationsWithGroupsForTeacher,
 } from "@/lib/database";
 import { exportAnnualReport } from "@/lib/excelExport";
@@ -14,6 +15,8 @@ import {
   exportSemester1Report,
   exportSemester2Report,
 } from "@/lib/excelExportByPresentation";
+import { generateSlug } from "@/lib/slugs";
+import { setEditMode } from "@/lib/editMode";
 import toast from "react-hot-toast";
 import {
   FileSpreadsheet,
@@ -54,12 +57,12 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
     if (!academicYearId) return;
 
     try {
-      const [yearData, presentationsData] = await Promise.all([
-        getAcademicYear(academicYearId),
-        isTeacher && user
-          ? getPresentationsWithGroupsForTeacher(academicYearId, user.id)
-          : getPresentationsByAcademicYear(academicYearId),
-      ]);
+      // Use slug-aware lookup function
+      const yearData = await getAcademicYearBySlugOrId(academicYearId);
+      
+      const presentationsData = isTeacher && user
+        ? await getPresentationsWithGroupsForTeacher(yearData.id, user.id)
+        : await getPresentationsByAcademicYear(yearData.id);
 
       setAcademicYear(yearData);
 
@@ -96,10 +99,10 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
   }
 
   async function handleDownloadAnnualReport() {
-    if (!academicYearId) return;
+    if (!academicYear) return;
     try {
       toast.loading("Generating Annual Report...");
-      await exportAnnualReport(academicYearId, user?.id, user?.role);
+      await exportAnnualReport(academicYear.id, user?.id, user?.role);
       toast.dismiss();
       toast.success("Annual Report downloaded successfully");
     } catch (error: any) {
@@ -110,10 +113,10 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
   }
 
   async function handleExportSemester1() {
-    if (!academicYearId) return;
+    if (!academicYear) return;
     try {
       toast.loading("Generating Semester 1 Report...");
-      await exportSemester1Report(academicYearId, user?.id, user?.role);
+      await exportSemester1Report(academicYear.id, user?.id, user?.role);
       toast.dismiss();
       toast.success("Semester 1 Report downloaded successfully");
       setShowSemesterDropdown(false);
@@ -125,10 +128,10 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
   }
 
   async function handleExportSemester2() {
-    if (!academicYearId) return;
+    if (!academicYear) return;
     try {
       toast.loading("Generating Semester 2 Report...");
-      await exportSemester2Report(academicYearId, user?.id, user?.role);
+      await exportSemester2Report(academicYear.id, user?.id, user?.role);
       toast.dismiss();
       toast.success("Semester 2 Report downloaded successfully");
       setShowSemesterDropdown(false);
@@ -249,15 +252,17 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                 <Download className="w-4 h-5 flex-shrink-0" />
                 <span className="hidden sm:inline">Annual Report</span>
               </button>
-              <button
-                onClick={() =>
-                  router.push(`/marks-entry?academicYearId=${academicYearId}`)
-                }
-                className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
-              >
-                <Edit className="w-4 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Marks Entry</span>
-              </button>
+              {!isAdmin && (
+                <button
+                  onClick={() =>
+                    router.push(`/marks-entry?academicYearId=${academicYearId}`)
+                  }
+                  className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
+                >
+                  <Edit className="w-4 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Marks Entry</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -277,15 +282,17 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
               Create presentations and add groups to start entering evaluation
               marks.
             </p>
-            <button
-              onClick={() =>
-                router.push(`/marks-entry?academicYearId=${academicYearId}`)
-              }
-              className="btn btn-primary inline-flex items-center gap-2"
-            >
-              <Edit className="w-4 h-4" />
-              Go to Marks Entry
-            </button>
+            {!isAdmin && (
+              <button
+                onClick={() =>
+                  router.push(`/marks-entry?academicYearId=${academicYearId}`)
+                }
+                className="btn btn-primary inline-flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Go to Marks Entry
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -321,16 +328,13 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                   3: "from-emerald-500 to-emerald-600",
                   4: "from-orange-500 to-orange-600",
                 };
-
                 return (
                   <div
                     key={presentation.id}
                     className="group cursor-pointer transform transition-all duration-300 hover:scale-105 active:scale-95"
-                    onClick={() =>
-                      router.push(
-                        `/presentation/${encodeURIComponent(presentation.id)}?readonly=true`,
-                      )
-                    }
+                    onClick={() => {
+                      router.push(`/presentation/${generateSlug(presentation.id)}`);
+                    }}
                   >
                     <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow bg-white h-full flex flex-col">
                       {/* Gradient Header */}
@@ -382,12 +386,11 @@ export default function Dashboard({ academicYearId }: DashboardProps) {
                             </div>
                           </div>
                         </div>
-
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(
-                              `/presentation/${encodeURIComponent(presentation.id)}?readonly=true`,
+                              `/presentation/${generateSlug(presentation.id)}`,
                             );
                           }}
                           className="w-full py-2 px-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors group-hover:border-blue-400"

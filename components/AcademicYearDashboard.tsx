@@ -11,6 +11,7 @@ import {
   updateAcademicYear,
 } from "@/lib/database";
 import { exportAnnualReport } from "@/lib/excelExportAnnual";
+import { generateSlug } from "@/lib/slugs";
 import { useAuth } from "@/providers/AuthProvider";
 import toast from "react-hot-toast";
 import UserProfile from "./UserProfile";
@@ -295,7 +296,7 @@ export default function AcademicYearDashboard() {
 
                 <div className="flex gap-2 mt-auto">
                   <button
-                    onClick={() => router.push(`/academic-years/${year.id}`)}
+                    onClick={() => router.push(`/academic-years/${generateSlug(year.id)}`)}
                     className="btn btn-primary flex-1"
                   >
                     View Presentations

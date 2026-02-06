@@ -9,11 +9,13 @@ import {
 } from "@/lib/types";
 import {
     getPresentation,
+    getPresentationBySlugOrId,
     getGroupsByPresentation,
     getGroupsByPresentationForTeacher,
     updateEvaluation,
 } from "@/lib/database";
 import { Download, Users, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { generateSlug } from "@/lib/slugs";
 import { exportProjectClassificationReport } from "@/lib/excelExportByPresentation";
 import toast from "react-hot-toast";
 import UserProfile from "./UserProfile";
@@ -44,13 +46,13 @@ export default function ClassificationView({
     async function loadData() {
         try {
             setLoading(true);
-            const pData = await getPresentation(presentationId);
+            const pData = await getPresentationBySlugOrId(presentationId);
             setPresentation(pData);
 
             const gData =
                 user?.role === "teacher"
-                    ? await getGroupsByPresentationForTeacher(presentationId, user.id)
-                    : await getGroupsByPresentation(presentationId);
+                    ? await getGroupsByPresentationForTeacher(pData.id, user.id)
+                    : await getGroupsByPresentation(pData.id);
             setGroups(gData);
 
             // Check if teacher has access to this presentation
@@ -285,7 +287,7 @@ export default function ClassificationView({
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <button
-                                onClick={() => router.push(`/presentation/${presentationId}`)}
+                                onClick={() => router.push(`/presentation/${generateSlug(presentationId)}`)}
                                 className="btn btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center"
                             >
                                 <LayoutDashboard className="w-4 h-5 flex-shrink-0" />
@@ -315,7 +317,7 @@ export default function ClassificationView({
                                 <th rowSpan={2} className="w-48 border-b-2">Name of Student</th>
                                 <th rowSpan={2} className="w-48 border-b-2">Guide Name</th>
                                 <th rowSpan={2} className="w-64 border-b-2">Final Project Title</th>
-                                <th rowSpan={2} className="w-40 border-b-2 text-center">In-Home/ Sponsored</th>
+                                <th rowSpan={2} className="w-40 border-b-2 text-center">In-House/ Sponsored</th>
                                 <th colSpan={4} className="text-center bg-pink-50 border-b">Classification of project</th>
                                 <th colSpan={5} className="text-center bg-purple-50 border-b">Scope of Finance</th>
                             </tr>
@@ -360,7 +362,7 @@ export default function ClassificationView({
                                                                 style={{ minHeight: "100%" }}
                                                             >
                                                                 <option value="">Select...</option>
-                                                                <option value="In-Home">In-Home</option>
+                                                                <option value="In-House">In-House</option>
                                                                 <option value="Sponsored">Sponsored</option>
                                                             </select>
                                                         </td>

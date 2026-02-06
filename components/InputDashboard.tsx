@@ -7,8 +7,11 @@ import {
   getPresentationsByAcademicYear,
   getPresentationStats,
   getAcademicYear,
+  getAcademicYearBySlugOrId,
   getPresentationsWithGroupsForTeacher,
 } from "@/lib/database";
+import { generateSlug } from "@/lib/slugs";
+import { setEditMode } from "@/lib/editMode";
 import { useAuth } from "@/providers/AuthProvider";
 import toast from "react-hot-toast";
 import {
@@ -16,7 +19,6 @@ import {
   Users,
   GraduationCap,
   ArrowLeft,
-  Lock,
 } from "lucide-react";
 import UserProfile from "./UserProfile";
 import Logo from "./Logo";
@@ -27,13 +29,20 @@ export default function InputDashboard({
   academicYearId: string;
 }) {
   const router = useRouter();
-  const { user, isTeacher } = useAuth();
+  const { user, isTeacher, isAdmin } = useAuth();
   const [academicYear, setAcademicYear] = useState<AcademicYear | null>(null);
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [stats, setStats] = useState<
     Record<string, { groupCount: number; studentCount: number }>
   >({});
   const [loading, setLoading] = useState(true);
+
+  // Redirect admins away from marks entry page
+  useEffect(() => {
+    if (isAdmin) {
+      router.push(`/reports`);
+    }
+  }, [isAdmin, router]);
 
   useEffect(() => {
     if (academicYearId) {
@@ -55,12 +64,12 @@ export default function InputDashboard({
 
   async function loadData() {
     try {
-      const [yearData, presentationsData] = await Promise.all([
-        getAcademicYear(academicYearId),
-        isTeacher && user
-          ? getPresentationsWithGroupsForTeacher(academicYearId, user.id)
-          : getPresentationsByAcademicYear(academicYearId),
-      ]);
+      // Use slug-aware lookup for academic year
+      const yearData = await getAcademicYearBySlugOrId(academicYearId);
+      
+      const presentationsData = isTeacher && user
+        ? await getPresentationsWithGroupsForTeacher(yearData.id, user.id)
+        : await getPresentationsByAcademicYear(yearData.id);
 
       setAcademicYear(yearData);
       setPresentations(presentationsData);
@@ -145,7 +154,7 @@ export default function InputDashboard({
                   Marks Entry: {academicYear.name}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                  Manage presentations and enter marks
+                  {isTeacher ? "Manage presentations and enter marks" : "View presentations"}
                 </p>
               </div>
             </div>
@@ -156,23 +165,23 @@ export default function InputDashboard({
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {sortedPresentations.map((presentation) => {
-            // Determine which internal evaluation this presentation is for
-            const presentationNumber = parseInt(
-              presentation.name.match(/\d+/)?.[0] || "0",
-            );
-            const stats_group = stats[presentation.id]?.groupCount || 0;
-            const stats_student = stats[presentation.id]?.studentCount || 0;
+            {sortedPresentations.map((presentation) => {
+              // Determine which internal evaluation this presentation is for
+              const presentationNumber = parseInt(
+                presentation.name.match(/\d+/)?.[0] || "0",
+              );
+              const stats_group = stats[presentation.id]?.groupCount || 0;
+              const stats_student = stats[presentation.id]?.studentCount || 0;
 
-            return (
-              <div
-                key={presentation.id}
-                className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow flex flex-col"
-              >
-                <div className="mb-3 sm:mb-4">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
-                    {presentation.name}
-                  </h3>
+              return (
+                <div
+                  key={presentation.id}
+                  className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow flex flex-col"
+                >
+                  <div className="mb-3 sm:mb-4">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
+                      {presentation.name}
+                    </h3>
                   <p className="text-xs sm:text-sm text-gray-600">
                     {presentation.semester}
                   </p>
@@ -190,9 +199,12 @@ export default function InputDashboard({
                 </div>
 
                 <button
-                  onClick={() =>
-                    router.push(`/presentation/${presentation.id}`)
-                  }
+                  onClick={() => {
+                    // Set edit mode flag before navigating
+                    setEditMode(true);
+                    const url = `/presentation/${generateSlug(presentation.id)}`;
+                    router.push(url);
+                  }}
                   className="w-full btn btn-secondary mt-auto"
                 >
                   View Evaluation

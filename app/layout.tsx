@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -9,7 +9,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
     title: "Project Evaluation Management System",
     description: "BE Project TW Evaluation Management for Computer Engineering Department",
-    viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover",
+};
+
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1.0,
+    viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -20,7 +25,6 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
                 <meta name="apple-mobile-web-app-capable" content="true" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
             </head>

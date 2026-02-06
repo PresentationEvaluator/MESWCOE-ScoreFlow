@@ -1,19 +1,6 @@
-/**
- * Example implementation: ExportFormatted Dashboard Component
- *
- * This component demonstrates how to integrate the formatted Excel export
- * functionality into your application UI.
- *
- * Features:
- * - Export individual presentations
- * - Export all presentations separately
- * - Export combined semesters
- * - Export complete annual report
- */
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Download, FileSpreadsheet } from "lucide-react";
 import {
@@ -23,6 +10,7 @@ import {
   exportSemester2CombinedFormatted,
   exportAnnualReportFormattedAndSeparated,
 } from "@/lib/excelExportFormatted";
+import { getAcademicYearBySlugOrId } from "@/lib/database";
 import Logo from "./Logo";
 import { useAuth } from "@/providers/AuthProvider";
 import UserProfile from "./UserProfile";
@@ -38,6 +26,23 @@ export default function ExportFormattedDashboard({
 }: ExportFormattedDashboardProps) {
   const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
+  const [actualAcademicYearId, setActualAcademicYearId] = useState<string>(academicYearId);
+
+  // Resolve slug to actual UUID on mount
+  useEffect(() => {
+    const resolveYearId = async () => {
+      try {
+        const yearData = await getAcademicYearBySlugOrId(academicYearId);
+        setActualAcademicYearId(yearData.id);
+      } catch (error) {
+        console.error("Failed to resolve academic year:", error);
+        // Fallback to the provided ID if resolution fails
+        setActualAcademicYearId(academicYearId);
+      }
+    };
+
+    resolveYearId();
+  }, [academicYearId]);
 
   // Single Presentation Export
   const handleExportPresentation = async (
@@ -47,10 +52,12 @@ export default function ExportFormattedDashboard({
     setIsExporting(true);
     try {
       await exportPresentationSeparatelyFormatted(
-        academicYearId,
+        actualAcademicYearId,
         presentationId,
-        presentationName,        user?.id,
-        (user as any)?.role,      );
+        presentationName,
+        user?.id,
+        (user as any)?.role,
+      );
       toast.success(`${presentationName} exported successfully!`);
     } catch (error) {
       console.error("Export error:", error);
@@ -64,7 +71,7 @@ export default function ExportFormattedDashboard({
   const handleExportAllSeparated = async () => {
     setIsExporting(true);
     try {
-      await exportAllPresentationsSeparatelyFormatted(academicYearId, user?.id, (user as any)?.role);
+      await exportAllPresentationsSeparatelyFormatted(actualAcademicYearId, user?.id, (user as any)?.role);
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export presentations");
@@ -77,7 +84,7 @@ export default function ExportFormattedDashboard({
   const handleExportSemester1 = async () => {
     setIsExporting(true);
     try {
-      await exportSemester1CombinedFormatted(academicYearId, user?.id, (user as any)?.role);
+      await exportSemester1CombinedFormatted(actualAcademicYearId, user?.id, (user as any)?.role);
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export Semester 1");
@@ -90,7 +97,7 @@ export default function ExportFormattedDashboard({
   const handleExportSemester2 = async () => {
     setIsExporting(true);
     try {
-      await exportSemester2CombinedFormatted(academicYearId, user?.id, (user as any)?.role);
+      await exportSemester2CombinedFormatted(actualAcademicYearId, user?.id, (user as any)?.role);
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export Semester 2");
@@ -103,7 +110,7 @@ export default function ExportFormattedDashboard({
   const handleExportAnnualReport = async () => {
     setIsExporting(true);
     try {
-      await exportAnnualReportFormattedAndSeparated(academicYearId, user?.id, (user as any)?.role);
+      await exportAnnualReportFormattedAndSeparated(actualAcademicYearId, user?.id, (user as any)?.role);
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export annual report");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Presentation,
   GroupWithStudents,
@@ -10,14 +10,15 @@ import {
 } from "@/lib/types";
 import {
   getPresentation,
+  getPresentationBySlugOrId,
   getGroupsByPresentation,
   getGroupsByPresentationForTeacher,
   updateEvaluation,
-  getPresentationsByAcademicYear, // Added for sibling fetch
+  getPresentationsByAcademicYear,
 } from "@/lib/database";
 import { calculateAllMarks } from "@/lib/calculations";
 import GroupManagement from "./GroupManagementWithRoles";
-import { Download, Users, ArrowLeft, ChevronDown, Edit2 } from "lucide-react";
+import { Download, Users, ArrowLeft, ChevronDown } from "lucide-react";
 import { exportPresentationToExcel } from "@/lib/excelExport";
 import {
   exportPresentation1Report,
@@ -28,6 +29,7 @@ import {
   exportSemester2Report,
   exportProjectClassificationReport,
 } from "@/lib/excelExportByPresentation";
+import { isEditModeEnabled } from "@/lib/editMode";
 import toast from "react-hot-toast";
 import UserProfile from "./UserProfile";
 import Logo from "./Logo";
@@ -59,7 +61,7 @@ const MARK_LIMITS: Record<string, number> = {
   participation_conference: 10,
   publication: 10,
   project_report: 20,
-  // Classification fields (capped at 10 as per schema, though used as checkboxes/binary usually, we allow 0-10)
+  // Classification fields
   classification_product: 10,
   classification_research: 10,
   classification_application: 10,
@@ -74,9 +76,23 @@ export default function PresentationView({
   presentationId,
 }: PresentationViewProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isReadOnly = searchParams.get("readonly") === "true";
   const { user, isAdmin, isTeacher } = useAuth();
+  
+  // Determine readonly status based on edit mode flag
+  // If edit mode was set (from marks-entry), and user is admin/teacher, allow editing
+  // Otherwise, readonly
+  const [isReadOnly, setIsReadOnly] = useState(true);
+  
+  useEffect(() => {
+    // Check if this came from marks-entry (edit mode enabled)
+    const editModeEnabled = isEditModeEnabled();
+    
+    // Allow editing only if:
+    // 1. Edit mode was set (came from marks-entry), AND
+    // 2. User is admin or teacher (role-based check)
+    const canEdit = editModeEnabled && (isAdmin || isTeacher);
+    setIsReadOnly(!canEdit);
+  }, [isAdmin, isTeacher]);
 
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [groups, setGroups] = useState<GroupWithStudents[]>([]);
@@ -113,18 +129,18 @@ export default function PresentationView({
     try {
       setLoading(true);
       
-      // Load Current
-      const presData = await getPresentation(presentationId);
+      // Load Current - use slug-aware lookup
+      const presData = await getPresentationBySlugOrId(presentationId);
 
       // Load groups based on user role
       let groupsData: GroupWithStudents[];
       if (isTeacher && user) {
         groupsData = await getGroupsByPresentationForTeacher(
-          presentationId,
+          presData.id,
           user.id,
         );
       } else {
-        groupsData = await getGroupsByPresentation(presentationId);
+        groupsData = await getGroupsByPresentation(presData.id);
       }
 
       setPresentation(presData);
@@ -338,10 +354,10 @@ export default function PresentationView({
   }
 
   async function handleExportSemester1() {
-    if (!academicYearId) return;
+    if (!presentation) return;
     try {
       toast.loading("Generating Semester 1 Report...");
-      await exportSemester1Report(academicYearId, user?.id, user?.role);
+      await exportSemester1Report(presentation.academic_year_id, user?.id, user?.role);
       toast.dismiss();
       toast.success("Semester 1 Report downloaded successfully");
       setShowSemesterDropdown(false);
@@ -353,10 +369,10 @@ export default function PresentationView({
   }
 
   async function handleExportSemester2() {
-    if (!academicYearId) return;
+    if (!presentation) return;
     try {
       toast.loading("Generating Semester 2 Report...");
-      await exportSemester2Report(academicYearId, user?.id, user?.role);
+      await exportSemester2Report(presentation.academic_year_id, user?.id, user?.role);
       toast.dismiss();
       toast.success("Semester 2 Report downloaded successfully");
       setShowSemesterDropdown(false);
@@ -527,19 +543,8 @@ export default function PresentationView({
                   <span className="sm:hidden">Classification</span>
                 </button>
               )}
-              {isReadOnly && (
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.delete("readonly");
-                    router.push(`/presentation/${presentationId}?${params.toString()}`);
-                  }}
-                  className="btn bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 justify-center w-full sm:w-auto"
-                >
-                  <Edit2 className="w-4 h-5 flex-shrink-0" />
-                  <span className="hidden sm:inline">Edit Marks</span>
-                  <span className="sm:hidden">Edit</span>
-                </button>
+              {isReadOnly && isAdmin && (
+                <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-2 rounded">Read-only mode</span>
               )}
               <button
                 onClick={handleExportExcel}
