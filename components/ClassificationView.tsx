@@ -55,12 +55,8 @@ export default function ClassificationView({
                     : await getGroupsByPresentation(pData.id);
             setGroups(gData);
 
-            // Check if teacher has access to this presentation
-            if (user?.role === "teacher" && user && gData.length === 0) {
-                toast.error("You don't have access to this presentation");
-                router.push(`/dashboard/${pData.academic_year_id}`);
-                return;
-            }
+            // Handled in the UI render section
+
         } catch (error) {
             console.error("Error loading classification data:", error);
             toast.error("Failed to load data");
@@ -253,7 +249,26 @@ export default function ClassificationView({
         );
     }
 
-    if (!presentation) return null;
+    if (!presentation) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">
+                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Users className="w-10 h-10 text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Presentation Not Found</h2>
+                    <p className="text-gray-600 mb-8">The presentation you are looking for does not exist or has been removed.</p>
+                    <button
+                        onClick={() => router.push("/")}
+                        className="w-full py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-primary-200 flex items-center justify-center gap-2"
+                    >
+                        <LayoutDashboard className="w-5 h-5" />
+                        Return to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-screen h-screen bg-gray-50 flex flex-col overflow-hidden prevent-scroll">
@@ -333,127 +348,145 @@ export default function ClassificationView({
                             </tr>
                         </thead>
                         <tbody>
-                            {groups.map((group) => (
-                                <>
-                                    {group.students.map((student, studentIndex) => {
-                                        const evaluation = student.evaluation || ({} as Partial<Evaluation>);
-                                        return (
-                                            <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                                {studentIndex === 0 && (
-                                                    <td rowSpan={4} className="text-center font-bold bg-gray-50 border-r">{group.group_number}</td>
-                                                )}
-                                                <td className="px-4 py-2 border-r">{student.student_name}</td>
-                                                {studentIndex === 0 && (
-                                                    <>
-                                                        <td rowSpan={4} className="px-4 py-2 bg-gray-50 border-r">{group.guide_name}</td>
-                                                        <td rowSpan={4} className="p-2 border-r">
-                                                            <textarea
-                                                                value={evaluation.project_title || ""}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "project_title", e.target.value)}
-                                                                className="w-full text-sm p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px] resize-none"
-                                                                placeholder="Enter project title..."
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="p-0 text-center border-r">
-                                                            <select
-                                                                value={evaluation.project_type_in_house_sponsored || ""}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "project_type_in_house_sponsored", e.target.value)}
-                                                                className="w-full h-full text-sm p-3 border-gray-200 focus:ring-2 focus:ring-primary-500 rounded-md"
-                                                                style={{ minHeight: "100%" }}
-                                                            >
-                                                                <option value="">Select...</option>
-                                                                <option value="In-House">In-House</option>
-                                                                <option value="Sponsored">Sponsored</option>
-                                                            </select>
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-pink-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.classification_product || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "classification_product", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-pink-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.classification_research || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "classification_research", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-pink-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.classification_application || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "classification_application", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-pink-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.classification_design || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "classification_design", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-purple-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.finance_institute || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "finance_institute", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td rowSpan={4} className="text-center bg-purple-50 border-r">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(evaluation.finance_self || 0) > 0}
-                                                                onChange={(e) => handleGroupFieldChange(group.id, "finance_self", e.target.checked ? 10 : 0)}
-                                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
-                                                            />
-                                                        </td>
-                                                        {evaluation.project_type_in_house_sponsored === "Sponsored" ? (
-                                                            <>
-                                                                <td rowSpan={4} className="text-center bg-purple-50 border-r">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={(evaluation.finance_industry || 0) > 0}
-                                                                        onChange={(e) => handleGroupFieldChange(group.id, "finance_industry", e.target.checked ? 10 : 0)}
-                                                                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
-                                                                    />
-                                                                </td>
-                                                                <td rowSpan={4} className="bg-purple-50 p-3 border-l border-gray-300">
-                                                                    <textarea
-                                                                        value={evaluation.industry_name || ""}
-                                                                        onChange={(e) => handleGroupFieldChange(group.id, "industry_name", e.target.value)}
-                                                                        placeholder="Enter industry name..."
-                                                                        className="w-full text-sm p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[100px] resize-none font-medium text-gray-700"
-                                                                    />
-                                                                </td>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <td rowSpan={4} className="text-center bg-gray-100 border-r">
-                                                                    <span className="text-xs text-gray-400">-</span>
-                                                                </td>
-                                                                <td rowSpan={4} className="bg-gray-100 p-3 border-l border-gray-300">
-                                                                    <textarea
-                                                                        disabled
-                                                                        placeholder="Available only for Sponsored"
-                                                                        className="w-full text-sm p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-400 min-h-[100px] resize-none cursor-not-allowed"
-                                                                    />
-                                                                </td>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </tr>
-                                        );
-                                    })}
-                                </>
-                            ))}
+                            {groups.length > 0 ? (
+                                groups.map((group) => (
+                                    <>
+                                        {group.students.map((student, studentIndex) => {
+                                            const evaluation = student.evaluation || ({} as Partial<Evaluation>);
+                                            return (
+                                                <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                                                    {studentIndex === 0 && (
+                                                        <td rowSpan={group.students.length} className="text-center font-bold bg-gray-50 border-r">{group.group_number}</td>
+                                                    )}
+                                                    <td className="px-4 py-2 border-r">{student.student_name}</td>
+                                                    {studentIndex === 0 && (
+                                                        <>
+                                                            <td rowSpan={group.students.length} className="px-4 py-2 bg-gray-50 border-r">{group.guide_name}</td>
+                                                            <td rowSpan={group.students.length} className="p-2 border-r">
+                                                                <textarea
+                                                                    value={evaluation.project_title || ""}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "project_title", e.target.value)}
+                                                                    className="w-full text-sm p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px] resize-none"
+                                                                    placeholder="Enter project title..."
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="p-0 text-center border-r">
+                                                                <select
+                                                                    value={evaluation.project_type_in_house_sponsored || ""}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "project_type_in_house_sponsored", e.target.value)}
+                                                                    className="w-full h-full text-sm p-3 border-gray-200 focus:ring-2 focus:ring-primary-500 rounded-md"
+                                                                    style={{ minHeight: "100%" }}
+                                                                >
+                                                                    <option value="">Select...</option>
+                                                                    <option value="In-House">In-House</option>
+                                                                    <option value="Sponsored">Sponsored</option>
+                                                                </select>
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-pink-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.classification_product || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "classification_product", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-pink-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.classification_research || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "classification_research", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-pink-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.classification_application || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "classification_application", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-pink-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.classification_design || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "classification_design", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-purple-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.finance_institute || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "finance_institute", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td rowSpan={group.students.length} className="text-center bg-purple-50 border-r">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={(evaluation.finance_self || 0) > 0}
+                                                                    onChange={(e) => handleGroupFieldChange(group.id, "finance_self", e.target.checked ? 10 : 0)}
+                                                                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                                />
+                                                            </td>
+                                                            {evaluation.project_type_in_house_sponsored === "Sponsored" ? (
+                                                                <>
+                                                                    <td rowSpan={group.students.length} className="text-center bg-purple-50 border-r">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={(evaluation.finance_industry || 0) > 0}
+                                                                            onChange={(e) => handleGroupFieldChange(group.id, "finance_industry", e.target.checked ? 10 : 0)}
+                                                                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                                        />
+                                                                    </td>
+                                                                    <td rowSpan={group.students.length} className="bg-purple-50 p-3 border-l border-gray-300">
+                                                                        <textarea
+                                                                            value={evaluation.industry_name || ""}
+                                                                            onChange={(e) => handleGroupFieldChange(group.id, "industry_name", e.target.value)}
+                                                                            placeholder="Enter industry name..."
+                                                                            className="w-full text-sm p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[100px] resize-none font-medium text-gray-700"
+                                                                        />
+                                                                    </td>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <td rowSpan={group.students.length} className="text-center bg-gray-100 border-r">
+                                                                        <span className="text-xs text-gray-400">-</span>
+                                                                    </td>
+                                                                    <td rowSpan={group.students.length} className="bg-gray-100 p-3 border-l border-gray-300">
+                                                                        <textarea
+                                                                            disabled
+                                                                            placeholder="Available only for Sponsored"
+                                                                            className="w-full text-sm p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-400 min-h-[100px] resize-none cursor-not-allowed"
+                                                                        />
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
+                                    </>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={14} className="py-20 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-500">
+                                            <div className="bg-gray-100 p-4 rounded-full mb-4">
+                                                <Users className="w-12 h-12 text-gray-400" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900">No groups created yet</h3>
+                                            <p className="text-sm max-w-xs mx-auto">
+                                                {user?.role === "teacher" 
+                                                    ? "You haven't been assigned any groups for this presentation yet."
+                                                    : "No groups have been created for this presentation yet."}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
