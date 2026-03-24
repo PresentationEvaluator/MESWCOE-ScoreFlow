@@ -304,6 +304,18 @@ export async function getPresentationBySlugOrId(
   );
 }
 
+export async function updatePresentationColumns(
+  presentationId: string,
+  customColumns: Record<string, string>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("presentations")
+    .update({ custom_columns: customColumns })
+    .eq("id", presentationId);
+
+  if (error) throw error;
+}
+
 export async function deletePresentation(
   id: string,
   userId?: string,

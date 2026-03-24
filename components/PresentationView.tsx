@@ -18,7 +18,8 @@ import {
 } from "@/lib/database";
 import { calculateAllMarks } from "@/lib/calculations";
 import GroupManagement from "./GroupManagementWithRoles";
-import { Download, Users, ArrowLeft, ChevronDown } from "lucide-react";
+import { Download, Users, ArrowLeft, ChevronDown, Settings } from "lucide-react";
+import ColumnSettingsModal from "./ColumnSettingsModal";
 import { exportPresentationToExcel } from "@/lib/excelExport";
 import {
   exportPresentation1Report,
@@ -110,6 +111,7 @@ export default function PresentationView({
   const [academicYearId, setAcademicYearId] = useState<string>("");
   const [resolvedPresentationId, setResolvedPresentationId] = useState<string>("");
   const [lastLoadedAsTeacher, setLastLoadedAsTeacher] = useState<boolean | null>(null);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
 
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
@@ -449,6 +451,10 @@ export default function PresentationView({
   const isPres3 = presentation.name.endsWith("3");
   const isPres4 = presentation.name.endsWith("4");
 
+  const getColumnName = (key: string, defaultName: string) => {
+    return presentation.custom_columns?.[key] || defaultName;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 prevent-scroll">
       {/* Header */}
@@ -557,6 +563,16 @@ export default function PresentationView({
                 <span className="hidden sm:inline">Export Excel</span>
                 <span className="sm:hidden">Export</span>
               </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setIsColumnModalOpen(true)}
+                  className="btn border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 flex items-center gap-2 justify-center w-full sm:w-auto"
+                >
+                  <Settings className="w-4 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Edit Columns</span>
+                  <span className="sm:hidden">Columns</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -618,11 +634,11 @@ export default function PresentationView({
                   {/* Presentation 1 - Internal I Only */}
                   {isPres1 && (
                     <>
-                      <th className="w-32">Problem ID (10)</th>
-                      <th className="w-32">Literature (10)</th>
-                      <th className="w-32">Software Eng (10)</th>
-                      <th className="w-32">Req Analysis (10)</th>
-                      <th className="w-32">SRS (10)</th>
+                      <th className="w-32">{getColumnName("problem_identification", "Problem ID (10)")}</th>
+                      <th className="w-32">{getColumnName("literature_survey", "Literature (10)")}</th>
+                      <th className="w-32">{getColumnName("software_engineering", "Software Eng (10)")}</th>
+                      <th className="w-32">{getColumnName("requirement_analysis", "Req Analysis (10)")}</th>
+                      <th className="w-32">{getColumnName("srs", "SRS (10)")}</th>
                       <th className="w-28 bg-blue-50">Internal I Total (50)</th>
                     </>
                   )}
@@ -630,10 +646,10 @@ export default function PresentationView({
                   {/* Presentation 2 - Internal II Only */}
                   {isPres2 && (
                     <>
-                      <th className="w-24">Individual (10)</th>
-                      <th className="w-24">Team Work (10)</th>
-                      <th className="w-24">Presentation (10)</th>
-                      <th className="w-24">Paper (20)</th>
+                      <th className="w-24">{getColumnName("individual_capacity", "Individual (10)")}</th>
+                      <th className="w-24">{getColumnName("team_work", "Team Work (10)")}</th>
+                      <th className="w-24">{getColumnName("presentation_qa", "Presentation (10)")}</th>
+                      <th className="w-24">{getColumnName("paper_presentation", "Paper (20)")}</th>
                       <th className="w-28 bg-blue-50">
                         Internal II Total (50)
                       </th>
@@ -643,11 +659,11 @@ export default function PresentationView({
                   {/* Presentation 3 - Internal III Only */}
                   {isPres3 && (
                     <>
-                      <th className="w-24">Ident Module (10)</th>
-                      <th className="w-24">Coding (10)</th>
-                      <th className="w-24">Team Work (10)</th>
-                      <th className="w-24">Understanding (10)</th>
-                      <th className="w-24">Presentation (10)</th>
+                      <th className="w-24">{getColumnName("identification_module", "Ident Module (10)")}</th>
+                      <th className="w-24">{getColumnName("coding", "Coding (10)")}</th>
+                      <th className="w-24">{getColumnName("team_work", "Team Work (10)")}</th>
+                      <th className="w-24">{getColumnName("understanding", "Understanding (10)")}</th>
+                      <th className="w-24">{getColumnName("internal_presentation_iii", "Presentation (10)")}</th>
                       <th className="w-28 bg-blue-50">
                         Internal III Total (50)
                       </th>
@@ -657,10 +673,10 @@ export default function PresentationView({
                   {/* Presentation 4 - Internal IV Only */}
                   {isPres4 && (
                     <>
-                      <th className="w-24">Testing (10)</th>
-                      <th className="w-24">Participation (10)</th>
-                      <th className="w-24">Publication (10)</th>
-                      <th className="w-24">Project Report (20)</th>
+                      <th className="w-24">{getColumnName("testing", "Testing (10)")}</th>
+                      <th className="w-24">{getColumnName("participation_conference", "Participation (10)")}</th>
+                      <th className="w-24">{getColumnName("publication", "Publication (10)")}</th>
+                      <th className="w-24">{getColumnName("project_report", "Project Report (20)")}</th>
                       <th className="w-28 bg-blue-50">
                         Internal IV Total (50)
                       </th>
@@ -1071,6 +1087,16 @@ export default function PresentationView({
             setShowGroupManagement(false);
             loadData();
           }}
+        />
+      )}
+
+      {/* Column Settings Modal */}
+      {isColumnModalOpen && (
+        <ColumnSettingsModal
+          isOpen={isColumnModalOpen}
+          onClose={() => setIsColumnModalOpen(false)}
+          presentation={presentation}
+          onSave={loadData}
         />
       )}
     </div>

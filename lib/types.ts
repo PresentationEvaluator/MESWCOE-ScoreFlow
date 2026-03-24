@@ -54,6 +54,7 @@ export interface Presentation {
   name: string;
   semester: string | null;
   academic_year_id: string;
+  custom_columns?: Record<string, string>; // User-defined column headers
   created_at: string;
   updated_at: string;
 }
