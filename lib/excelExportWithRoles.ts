@@ -672,6 +672,7 @@ export async function exportDataAsAdmin(
   academicYearId: string,
   filterOptions: ExportFilterOptions
 ) {
+  const academicYear = await getAcademicYear(academicYearId);
   const presentations = await getPresentationsByAcademicYear(academicYearId);
 
   if (presentations.length === 0) {
@@ -715,22 +716,57 @@ export async function exportDataAsAdmin(
         "Total (50)",
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const headerRows = addHeaderRows(academicYear, "SEM1");
+      const ws = XLSX.utils.aoa_to_sheet([...headerRows, headers, ...rows]);
       if (!ws["!merges"]) ws["!merges"] = [];
+      
+      const colCount = headers.length;
+      // Merge header rows across all columns
+      for (let r = 0; r < headerRows.length; r++) {
+        ws["!merges"].push({ s: { r, c: 0 }, e: { r, c: colCount - 1 } });
+      }
+
+      // Ensure header rows are centered and bold
+      const headerCellStyle = { 
+        alignment: { horizontal: "center", vertical: "center", wrapText: true }, 
+        font: { bold: true } 
+      };
+      for (let r = 0; r < headerRows.length; r++) {
+        const addr = XLSX.utils.encode_cell({ r, c: 0 });
+        if (!ws[addr]) ws[addr] = { t: "s", v: headerRows[r][0] };
+        ws[addr].s = headerCellStyle;
+      }
+
+      // Ensure column header row is centered and bold
+      const colHeaderRow = headerRows.length;
+      for (let c = 0; c < headers.length; c++) {
+        const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
+        if (ws[addr]) ws[addr].s = { ...(ws[addr].s || {}), alignment: { horizontal: "center", vertical: "center" }, font: { bold: true } };
+      }
+
       merges.forEach((m: any) => {
-        ws["!merges"]!.push({
-          s: { r: m.start + 1, c: m.col },
-          e: { r: m.start + m.count, c: m.col },
+        ws["!merges"]! .push({
+          s: { r: m.start + headerRows.length + 1, c: m.col },
+          e: { r: m.start + m.count + headerRows.length, c: m.col },
         });
       });
 
       // Apply any full-row separator merges
-      applyRowMerges(ws, merges, 1);
+      applyRowMerges(ws, merges, headerRows.length + 1);
 
       ws["!cols"] = headers.map(() => ({ wch: 15 }));
       ws["!cols"][0] = { wch: 10 };
       ws["!cols"][1] = { wch: 25 };
       ws["!cols"][2] = { wch: 25 };
+
+      ws["!rows"] = [
+        { hpx: 30 },
+        { hpx: 30 },
+        { hpx: 30 },
+        { hpx: 30 },
+      ];
+
+      applyProfessionalFormattingToWorksheet(ws, rows.length + headerRows.length + 1, headers.length);
 
       XLSX.utils.book_append_sheet(workbook, ws, "Semester 1");
     }
@@ -766,28 +802,61 @@ export async function exportDataAsAdmin(
         "Total (50)",
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const headerRows = addHeaderRows(academicYear, "SEM2");
+      const ws = XLSX.utils.aoa_to_sheet([...headerRows, headers, ...rows]);
       if (!ws["!merges"]) ws["!merges"] = [];
+      
+      const colCount = headers.length;
+      for (let r = 0; r < headerRows.length; r++) {
+        ws["!merges"].push({ s: { r, c: 0 }, e: { r, c: colCount - 1 } });
+      }
+
+      // Ensure header rows are centered and bold
+      const headerCellStyle = { 
+        alignment: { horizontal: "center", vertical: "center", wrapText: true }, 
+        font: { bold: true } 
+      };
+      for (let r = 0; r < headerRows.length; r++) {
+        const addr = XLSX.utils.encode_cell({ r, c: 0 });
+        if (!ws[addr]) ws[addr] = { t: "s", v: headerRows[r][0] };
+        ws[addr].s = headerCellStyle;
+      }
+
+      // Ensure column header row is centered and bold
+      const colHeaderRow = headerRows.length;
+      for (let c = 0; c < headers.length; c++) {
+        const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
+        if (ws[addr]) ws[addr].s = { ...(ws[addr].s || {}), alignment: { horizontal: "center", vertical: "center" }, font: { bold: true } };
+      }
+
       merges.forEach((m: any) => {
         ws["!merges"]!.push({
-          s: { r: m.start + 1, c: m.col },
-          e: { r: m.start + m.count, c: m.col },
+          s: { r: m.start + headerRows.length + 1, c: m.col },
+          e: { r: m.start + m.count + headerRows.length, c: m.col },
         });
       });
 
       // Apply any full-row separator merges
-      applyRowMerges(ws, merges, 1);
+      applyRowMerges(ws, merges, headerRows.length + 1);
 
       ws["!cols"] = headers.map(() => ({ wch: 15 }));
       ws["!cols"][0] = { wch: 10 };
       ws["!cols"][1] = { wch: 25 };
       ws["!cols"][2] = { wch: 25 };
 
+      ws["!rows"] = [
+        { hpx: 30 },
+        { hpx: 30 },
+        { hpx: 30 },
+        { hpx: 30 },
+      ];
+
+      applyProfessionalFormattingToWorksheet(ws, rows.length + headerRows.length + 1, headers.length);
+
       XLSX.utils.book_append_sheet(workbook, ws, "Semester 2");
     }
   }
 
-  const academicYear = await getAcademicYear(academicYearId);
   const fileName = `${academicYear.name}_Admin_Report.xlsx`;
   XLSX.writeFile(workbook, fileName);
 }

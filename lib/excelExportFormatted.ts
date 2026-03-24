@@ -1146,6 +1146,7 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Create merged header rows
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1165,12 +1166,11 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Center header rows and column headers
     const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
-    const h0 = XLSX.utils.encode_cell({ r: 0, c: 0 });
-    const h1 = XLSX.utils.encode_cell({ r: 1, c: 0 });
-    if (!ws[h0]) ws[h0] = { t: "s", v: mergedHeaders[0][0] };
-    if (!ws[h1]) ws[h1] = { t: "s", v: mergedHeaders[1][0] };
-    ws[h0].s = headerCellStyle;
-    ws[h1].s = headerCellStyle;
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[r][0] };
+      ws[addr].s = headerCellStyle;
+    }
     const colHeaderRow = mergedHeaders.length;
     for (let c = 0; c < headers.length; c++) {
       const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
@@ -1231,6 +1231,7 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Create merged header rows
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1247,12 +1248,11 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Center header rows and column headers
     const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
-    const h0 = XLSX.utils.encode_cell({ r: 0, c: 0 });
-    const h1 = XLSX.utils.encode_cell({ r: 1, c: 0 });
-    if (!ws[h0]) ws[h0] = { t: "s", v: mergedHeaders[0][0] };
-    if (!ws[h1]) ws[h1] = { t: "s", v: mergedHeaders[1][0] };
-    ws[h0].s = headerCellStyle;
-    ws[h1].s = headerCellStyle;
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[r][0] };
+      ws[addr].s = headerCellStyle;
+    }
     const colHeaderRow = mergedHeaders.length;
     for (let c = 0; c < headers.length; c++) {
       const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
@@ -1311,6 +1311,7 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Create merged header rows
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1320,6 +1321,19 @@ export async function exportAnnualReportFormattedAndSeparated(
     const allRows = [...mergedHeaders, headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(allRows);
 
+    // Ensure header rows are centered and bold
+    const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[r][0] };
+      ws[addr].s = headerCellStyle;
+    }
+    const colHeaderRow = mergedHeaders.length;
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
+      if (ws[addr]) ws[addr].s = { ...(ws[addr].s || {}), alignment: { horizontal: "center", vertical: "center" }, font: { bold: true } };
+    }
+
     ws["!cols"] = [
       { wch: 25 },
       { wch: 25 },
@@ -1328,7 +1342,8 @@ export async function exportAnnualReportFormattedAndSeparated(
     ws["!rows"] = [
       { hpx: 30 },
       { hpx: 30 },
-      { hpx: 30 }, // Column headers
+      { hpx: 30 },
+      { hpx: 30 },
     ];
 
     applyProfessionalFormattingToWorksheet(
@@ -1363,6 +1378,7 @@ export async function exportAnnualReportFormattedAndSeparated(
 
     // Create merged header rows
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1372,6 +1388,19 @@ export async function exportAnnualReportFormattedAndSeparated(
     const allRows = [...mergedHeaders, headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(allRows);
 
+    // Ensure header rows are centered and bold
+    const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[r][0] };
+      ws[addr].s = headerCellStyle;
+    }
+    const colHeaderRow = mergedHeaders.length;
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r: colHeaderRow, c });
+      if (ws[addr]) ws[addr].s = { ...(ws[addr].s || {}), alignment: { horizontal: "center", vertical: "center" }, font: { bold: true } };
+    }
+
     ws["!cols"] = [
       { wch: 25 },
       { wch: 25 },
@@ -1380,7 +1409,8 @@ export async function exportAnnualReportFormattedAndSeparated(
     ws["!rows"] = [
       { hpx: 30 },
       { hpx: 30 },
-      { hpx: 30 }, // Column headers
+      { hpx: 30 },
+      { hpx: 30 },
     ];
 
     applyProfessionalFormattingToWorksheet(
@@ -1453,6 +1483,7 @@ export async function exportAnnualReportBySemester(
     ];
 
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project SEM1 TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1510,6 +1541,7 @@ export async function exportAnnualReportBySemester(
       { hpx: 30 },
       { hpx: 30 },
       { hpx: 30 },
+      { hpx: 30 },
     ];
 
     applyProfessionalFormattingToWorksheet(
@@ -1551,6 +1583,7 @@ export async function exportAnnualReportBySemester(
     ];
 
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project SEM2 TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -1605,6 +1638,7 @@ export async function exportAnnualReportBySemester(
       ...headers.slice(3).map(() => ({ wch: 15 })),
     ];
     ws["!rows"] = [
+      { hpx: 30 },
       { hpx: 30 },
       { hpx: 30 },
       { hpx: 30 },
