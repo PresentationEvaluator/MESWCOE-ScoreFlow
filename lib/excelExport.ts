@@ -8,6 +8,7 @@ import {
   getGroupsByPresentation,
   getGroupsByPresentationForTeacher,
 } from "./database";
+import { DEFAULT_COLUMNS } from "./constants";
 
 // Helper to prepare data for Semester 1 Sheet (Merging P1 & P2)
 async function prepareSemester1Data(
@@ -197,7 +198,7 @@ async function prepareSemester2Data(
           eval3.coding || 0,
           eval3.team_work || 0,
           eval3.understanding || 0,
-          eval3.presentation_qa || 0,
+          eval3.internal_presentation_iii || 0,
           internal3,
           // P4
           eval4.testing || 0,
@@ -254,20 +255,15 @@ export async function exportPresentationToExcel(
       userId,
       userRole,
     );
+    const headers1 = DEFAULT_COLUMNS[1];
+    const headers2 = DEFAULT_COLUMNS[2];
     headers = [
       "Group No",
       "Student Name",
       "Guide Name",
-      "Problem ID (10)",
-      "Literature (10)",
-      "Software Eng (10)",
-      "Req Analysis (10)",
-      "SRS (10)",
+      ...Object.values(headers1).map(h => `${h.name} (${h.maxMark})`),
       "Internal I (50)",
-      "Individual (10)",
-      "Team Work (10)",
-      "Presentation (10)",
-      "Paper (20)",
+      ...Object.values(headers2).map(h => `${h.name} (${h.maxMark})`),
       "Internal II (50)",
       "Total (100)",
       "Total (50)",
@@ -280,20 +276,15 @@ export async function exportPresentationToExcel(
       userId,
       userRole,
     );
+    const headers3 = DEFAULT_COLUMNS[3];
+    const headers4 = DEFAULT_COLUMNS[4];
     headers = [
       "Group No",
       "Student Name",
       "Guide Name",
-      "Ident Module (10)",
-      "Coding (10)",
-      "Team Work (10)",
-      "Understanding (10)",
-      "Presentation (10)",
+      ...Object.values(headers3).map(h => `${h.name} (${h.maxMark})`),
       "Internal III (50)",
-      "Testing (10)",
-      "Participation (10)",
-      "Publication (10)",
-      "Project Report (20)",
+      ...Object.values(headers4).map(h => `${h.name} (${h.maxMark})`),
       "Internal IV (50)",
       "Total (100)",
       "Total (50)",
@@ -352,20 +343,15 @@ export async function exportAnnualReport(
       userId,
       userRole,
     );
+    const headers1 = DEFAULT_COLUMNS[1];
+    const headers2 = DEFAULT_COLUMNS[2];
     const headers = [
       "Group No",
       "Student Name",
       "Guide Name",
-      "Problem ID (10)",
-      "Literature (10)",
-      "Software Eng (10)",
-      "Req Analysis (10)",
-      "SRS (10)",
+      ...Object.values(headers1).map(h => `${h.name} (${h.maxMark})`),
       "Internal I (50)",
-      "Individual (10)",
-      "Team Work (10)",
-      "Presentation (10)",
-      "Paper (20)",
+      ...Object.values(headers2).map(h => `${h.name} (${h.maxMark})`),
       "Internal II (50)",
       "Total (100)",
       "Total (50)",
@@ -439,20 +425,15 @@ export async function exportAnnualReport(
       userId,
       userRole,
     );
+    const headers3 = DEFAULT_COLUMNS[3];
+    const headers4 = DEFAULT_COLUMNS[4];
     const headers = [
       "Group No",
       "Student Name",
       "Guide Name",
-      "Ident Module (10)",
-      "Coding (10)",
-      "Team Work (10)",
-      "Understanding (10)",
-      "Presentation (10)",
+      ...Object.values(headers3).map(h => `${h.name} (${h.maxMark})`),
       "Internal III (50)",
-      "Testing (10)",
-      "Participation (10)",
-      "Publication (10)",
-      "Project Report (20)",
+      ...Object.values(headers4).map(h => `${h.name} (${h.maxMark})`),
       "Internal IV (50)",
       "Total (100)",
       "Total (50)",

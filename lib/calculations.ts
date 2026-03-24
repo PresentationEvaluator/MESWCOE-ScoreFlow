@@ -30,7 +30,7 @@ export function calculateInternalPresentation3(evaluation: Partial<Evaluation>):
         (evaluation.coding || 0) +
         (evaluation.team_work || 0) +
         (evaluation.understanding || 0) +
-        (evaluation.presentation_qa || 0)
+        (evaluation.internal_presentation_iii || 0)
     );
     return Math.min(sum, 50);
 }
@@ -97,12 +97,12 @@ export function validateMark(field: string, value: number): boolean {
         identification_module: 10,
         coding: 10,
         understanding: 10,
-        internal_presentation_iii: 50,
+        internal_presentation_iii: 10,
         testing: 10,
         participation_conference: 10,
         publication: 10,
         project_report: 20,
-        internal_presentation_iv: 50,
+        internal_presentation_iv: 10,
     };
 
     const max = maxValues[field];
@@ -128,12 +128,12 @@ export function getMaxValue(field: string): number {
         identification_module: 10,
         coding: 10,
         understanding: 10,
-        internal_presentation_iii: 50,
+        internal_presentation_iii: 10,
         testing: 10,
         participation_conference: 10,
         publication: 10,
         project_report: 20,
-        internal_presentation_iv: 50,
+        internal_presentation_iv: 10,
     };
 
     return maxValues[field] || 0;

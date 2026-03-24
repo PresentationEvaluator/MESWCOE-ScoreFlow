@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Presentation, CustomColumn, BaseColumnConfig } from "@/lib/types";
 import { updatePresentationColumns } from "@/lib/database";
+import { DEFAULT_COLUMNS } from "@/lib/constants";
 import toast from "react-hot-toast";
 import { X, Save, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 
@@ -11,34 +12,6 @@ interface ColumnSettingsModalProps {
   onSave: () => void;
 }
 
-const DEFAULT_COLUMNS: Record<number, Record<string, { name: string; maxMark: number }>> = {
-  1: {
-    problem_identification: { name: "Problem ID", maxMark: 10 },
-    literature_survey: { name: "Literature", maxMark: 10 },
-    software_engineering: { name: "Software Eng", maxMark: 10 },
-    requirement_analysis: { name: "Req Analysis", maxMark: 10 },
-    srs: { name: "SRS", maxMark: 10 },
-  },
-  2: {
-    individual_capacity: { name: "Individual", maxMark: 10 },
-    team_work: { name: "Team Work", maxMark: 10 },
-    presentation_qa: { name: "Presentation", maxMark: 10 },
-    paper_presentation: { name: "Paper", maxMark: 20 },
-  },
-  3: {
-    identification_module: { name: "Ident Module", maxMark: 10 },
-    coding: { name: "Coding", maxMark: 10 },
-    team_work: { name: "Team Work", maxMark: 10 },
-    understanding: { name: "Understanding", maxMark: 10 },
-    internal_presentation_iii: { name: "Presentation", maxMark: 10 },
-  },
-  4: {
-    testing: { name: "Testing", maxMark: 10 },
-    participation_conference: { name: "Participation", maxMark: 10 },
-    publication: { name: "Publication", maxMark: 10 },
-    project_report: { name: "Project Report", maxMark: 20 },
-  },
-};
 
 export default function ColumnSettingsModal({
   isOpen,

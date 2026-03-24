@@ -7,6 +7,7 @@ import {
 } from "./database";
 import { calculateAllMarks } from "./calculations";
 import { applyProfessionalFormattingToWorksheet } from "./excelExportFormatted";
+import { DEFAULT_COLUMNS } from "./constants";
 
 /**
  * Add header rows and merge them across all columns
@@ -61,42 +62,18 @@ export async function exportAnnualReport(
       // Determine which columns to show based on presentation name
       let headers: string[] = ["Group No", "Student Name", "Guide Name"];
 
-      if (presentation.name.endsWith("1")) {
-        headers.push(
-          "Problem ID (10)",
-          "Literature (10)",
-          "Software Eng (10)",
-          "Req Analysis (10)",
-          "SRS (10)",
-          "Internal I (50)"
-        );
-      } else if (presentation.name.endsWith("2")) {
-        headers.push(
-          "Individual (10)",
-          "Team Work (10)",
-          "Presentation (10)",
-          "Paper (20)",
-          "Internal II (50)"
-        );
-      } else if (presentation.name.endsWith("3")) {
-        headers.push(
-          "Ident Module (10)",
-          "Coding (10)",
-          "Team Work (10)",
-          "Understanding (10)",
-          "Presentation (10)",
-          "Internal III (50)"
-        );
-      } else if (presentation.name.endsWith("4")) {
-        headers.push(
-          "Testing (10)",
-          "Participation (10)",
-          "Publication (10)",
-          "Project Report (20)",
-          "Internal IV (50)",
-          "Total (100)",
-          "Total (50)"
-        );
+      const presNum = parseInt(presentation.name.match(/\d+/)?.[0] || "0");
+      const defaultConfig = DEFAULT_COLUMNS[presNum];
+      if (defaultConfig) {
+        headers.push(...Object.values(defaultConfig).map(h => `${h.name} (${h.maxMark})`));
+        const totalNum = ["I", "II", "III", "IV"][presNum - 1];
+        headers.push(`Internal ${totalNum} (50)`);
+        if (presNum === 4 || presNum === 2) { // Add total columns for Sem 1 and 2 end presentations if needed
+          // The original code had specific logic for P4 totals
+          if (presNum === 4) {
+            headers.push("Total (100)", "Total (50)");
+          }
+        }
       }
 
       rows.push(headers);
@@ -153,7 +130,7 @@ export async function exportAnnualReport(
               evaluation.coding || "",
               evaluation.team_work || "",
               evaluation.understanding || "",
-              evaluation.presentation_qa || "",
+              evaluation.internal_presentation_iii || "",
               marks.internal_presentation_iii || "",
             ];
           } else if (presentation.name.endsWith("4")) {

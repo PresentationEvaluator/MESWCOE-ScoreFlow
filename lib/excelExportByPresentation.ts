@@ -10,57 +10,30 @@ import {
 } from "./database";
 import { applyProfessionalFormattingToWorksheet } from "./excelExportFormatted";
 import { BaseColumnConfig, CustomColumn } from "./types";
+import { DEFAULT_COLUMNS } from "./constants";
 
 /**
  * Helper to get visible columns for export
  */
 function getExportColumns(presentation: Presentation, presNum: number) {
-  const baseKeys: Record<number, string[]> = {
-    1: ["problem_identification", "literature_survey", "software_engineering", "requirement_analysis", "srs"],
-    2: ["individual_capacity", "team_work", "presentation_qa", "paper_presentation"],
-    3: ["identification_module", "coding", "team_work", "understanding", "internal_presentation_iii"],
-    4: ["testing", "participation_conference", "publication", "project_report"]
-  };
+  const defaultConfig = DEFAULT_COLUMNS[presNum] || {};
+  const keys = Object.keys(defaultConfig);
   
-  const defaultNames: Record<string, string> = {
-    problem_identification: "Problem ID",
-    literature_survey: "Literature",
-    software_engineering: "Software Eng",
-    requirement_analysis: "Req Analysis",
-    srs: "SRS",
-    individual_capacity: "Individual",
-    team_work: "Team Work",
-    presentation_qa: "Presentation",
-    paper_presentation: "Paper",
-    identification_module: "Ident Module",
-    coding: "Coding",
-    understanding: "Understanding",
-    internal_presentation_iii: "Presentation",
-    testing: "Testing",
-    participation_conference: "Participation",
-    publication: "Publication",
-    project_report: "Project Report"
-  };
-
-  const defaultMarks: Record<string, number> = {
-    paper_presentation: 20,
-    project_report: 20,
-  };
-
-  const keys = baseKeys[presNum] || [];
   const visibleBase = keys.map(key => {
+    const defaultCol = defaultConfig[key];
     const config = (presentation.custom_columns as any)?.[key];
+    
     if (typeof config === "string") {
-      return { key, name: config, maxMark: defaultMarks[key] || 10, isHidden: false };
+      return { key, name: config, maxMark: defaultCol.maxMark, isHidden: false };
     } else if (config && typeof config === "object") {
       return { 
         key, 
-        name: config.name || defaultNames[key] || key, 
-        maxMark: config.maxMark || defaultMarks[key] || 10, 
+        name: config.name || defaultCol.name, 
+        maxMark: config.maxMark || defaultCol.maxMark, 
         isHidden: !!config.isHidden 
       };
     }
-    return { key, name: defaultNames[key] || key, maxMark: defaultMarks[key] || 10, isHidden: false };
+    return { key, name: defaultCol.name, maxMark: defaultCol.maxMark, isHidden: false };
   }).filter(c => !c.isHidden);
 
   return visibleBase;

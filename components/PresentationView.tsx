@@ -9,6 +9,7 @@ import {
   CalculatedMarks,
   BaseColumnConfig,
 } from "@/lib/types";
+import { DEFAULT_COLUMNS, DEFAULT_MARK_LIMITS } from "@/lib/constants";
 import {
   getPresentation,
   getPresentationBySlugOrId,
@@ -42,37 +43,7 @@ interface PresentationViewProps {
 }
 
 // Validation constants
-const MARK_LIMITS: Record<string, number> = {
-  // Pres 1
-  problem_identification: 10,
-  literature_survey: 10,
-  software_engineering: 10,
-  requirement_analysis: 10,
-  srs: 10,
-  // Pres 2
-  individual_capacity: 10,
-  team_work: 10,
-  presentation_qa: 10,
-  paper_presentation: 20,
-  // Pres 3
-  identification_module: 10,
-  coding: 10,
-  understanding: 10,
-  // Pres 4
-  testing: 10,
-  participation_conference: 10,
-  publication: 10,
-  project_report: 20,
-  // Classification fields
-  classification_product: 10,
-  classification_research: 10,
-  classification_application: 10,
-  classification_design: 10,
-  // Finance fields
-  finance_institute: 10,
-  finance_self: 10,
-  finance_industry: 10,
-};
+const MARK_LIMITS: Record<string, number> = DEFAULT_MARK_LIMITS;
 
 export default function PresentationView({
   presentationId,
@@ -228,9 +199,12 @@ export default function PresentationView({
   }
 
   const getColumnConfig = (key: string): BaseColumnConfig => {
+    const presNum = parseInt(presentation?.name.match(/\d+/)?.[0] || "0");
+    const defaultConfig = DEFAULT_COLUMNS[presNum]?.[key];
+    
     // Basic defaults if everything else fails
-    const defaultVal = MARK_LIMITS[key] || 10;
-    const defaultName = key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    const defaultVal = defaultConfig?.maxMark || MARK_LIMITS[key] || 10;
+    const defaultName = defaultConfig?.name || key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
 
     if (!presentation) return { name: defaultName, maxMark: defaultVal, isHidden: false };
 
@@ -249,14 +223,8 @@ export default function PresentationView({
 
   const getVisibleBaseColumns = () => {
     const presNum = parseInt(presentation?.name.match(/\d+/)?.[0] || "0");
-    const keys: Record<number, string[]> = {
-      1: ["problem_identification", "literature_survey", "software_engineering", "requirement_analysis", "srs"],
-      2: ["individual_capacity", "team_work", "presentation_qa", "paper_presentation"],
-      3: ["identification_module", "coding", "team_work", "understanding", "internal_presentation_iii"],
-      4: ["testing", "participation_conference", "publication", "project_report"]
-    };
+    const relevantKeys = Object.keys(DEFAULT_COLUMNS[presNum] || {});
 
-    const relevantKeys = keys[presNum] || [];
     return relevantKeys.map(k => ({ key: k, ...getColumnConfig(k) })).filter(c => !c.isHidden);
   };
 
