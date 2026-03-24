@@ -306,11 +306,17 @@ export async function getPresentationBySlugOrId(
 
 export async function updatePresentationColumns(
   presentationId: string,
-  customColumns: Record<string, string>,
+  customColumns: Record<string, any>,
+  extraColumns?: any[], // CustomColumn[]
 ): Promise<void> {
+  const updates: any = { custom_columns: customColumns };
+  if (extraColumns !== undefined) {
+    updates.extra_columns = extraColumns;
+  }
+
   const { error } = await supabase
     .from("presentations")
-    .update({ custom_columns: customColumns })
+    .update(updates)
     .eq("id", presentationId);
 
   if (error) throw error;
@@ -924,11 +930,23 @@ export async function updateEvaluation(
       throw selectError;
     }
 
+    const isExtraMark = (field as string).startsWith("extra_");
+
     if (existing) {
       // Update existing evaluation
+      let updatePayload: any = { [field]: value };
+      
+      if (isExtraMark) {
+        // Merge with existing extra_marks
+        const currentExtraMarks = existing.extra_marks || {};
+        updatePayload = {
+          extra_marks: { ...currentExtraMarks, [field]: value }
+        };
+      }
+
       const { data, error } = await supabase
         .from("evaluations")
-        .update({ [field]: value })
+        .update(updatePayload)
         .eq("student_id", studentId)
         .select()
         .single();
@@ -940,9 +958,18 @@ export async function updateEvaluation(
       return data;
     } else {
       // Create new evaluation
+      let insertPayload: any = { student_id: studentId, [field]: value };
+      
+      if (isExtraMark) {
+        insertPayload = { 
+          student_id: studentId, 
+          extra_marks: { [field]: value } 
+        };
+      }
+
       const { data, error } = await supabase
         .from("evaluations")
-        .insert([{ student_id: studentId, [field]: value }])
+        .insert([insertPayload])
         .select()
         .single();
 

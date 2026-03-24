@@ -9,6 +9,62 @@ import {
   getGroupsByPresentationForTeacher,
 } from "./database";
 import { applyProfessionalFormattingToWorksheet } from "./excelExportFormatted";
+import { BaseColumnConfig, CustomColumn } from "./types";
+
+/**
+ * Helper to get visible columns for export
+ */
+function getExportColumns(presentation: Presentation, presNum: number) {
+  const baseKeys: Record<number, string[]> = {
+    1: ["problem_identification", "literature_survey", "software_engineering", "requirement_analysis", "srs"],
+    2: ["individual_capacity", "team_work", "presentation_qa", "paper_presentation"],
+    3: ["identification_module", "coding", "team_work", "understanding", "internal_presentation_iii"],
+    4: ["testing", "participation_conference", "publication", "project_report"]
+  };
+  
+  const defaultNames: Record<string, string> = {
+    problem_identification: "Problem ID",
+    literature_survey: "Literature",
+    software_engineering: "Software Eng",
+    requirement_analysis: "Req Analysis",
+    srs: "SRS",
+    individual_capacity: "Individual",
+    team_work: "Team Work",
+    presentation_qa: "Presentation",
+    paper_presentation: "Paper",
+    identification_module: "Ident Module",
+    coding: "Coding",
+    understanding: "Understanding",
+    internal_presentation_iii: "Presentation",
+    testing: "Testing",
+    participation_conference: "Participation",
+    publication: "Publication",
+    project_report: "Project Report"
+  };
+
+  const defaultMarks: Record<string, number> = {
+    paper_presentation: 20,
+    project_report: 20,
+  };
+
+  const keys = baseKeys[presNum] || [];
+  const visibleBase = keys.map(key => {
+    const config = (presentation.custom_columns as any)?.[key];
+    if (typeof config === "string") {
+      return { key, name: config, maxMark: defaultMarks[key] || 10, isHidden: false };
+    } else if (config && typeof config === "object") {
+      return { 
+        key, 
+        name: config.name || defaultNames[key] || key, 
+        maxMark: config.maxMark || defaultMarks[key] || 10, 
+        isHidden: !!config.isHidden 
+      };
+    }
+    return { key, name: defaultNames[key] || key, maxMark: defaultMarks[key] || 10, isHidden: false };
+  }).filter(c => !c.isHidden);
+
+  return visibleBase;
+}
 
 /**
  * Add header rows and merge them across all columns
@@ -155,10 +211,15 @@ export async function exportPresentation1Report(
     const headerRows = addHeaderRows(p1.name, academicYear);
     rows.push(...headerRows);
 
+    const visibleCols = getExportColumns(p1, 1);
+    const extraColumnHeaders = p1.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+      (p1.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
+
     const columnHeaders = [
-      "Group No", "Student Name", "Guide Name", "Problem ID (10)",
-      "Literature (10)", "Software Eng (10)", "Req Analysis (10)",
-      "SRS (10)", "Internal I (50)",
+      "Group No", "Student Name", "Guide Name", 
+      ...visibleCols.map(c => `${c.name} (${c.maxMark})`),
+      ...extraColumnHeaders, `Internal I (${totalMaxSum})`,
     ];
     rows.push(columnHeaders);
 
@@ -167,12 +228,14 @@ export async function exportPresentation1Report(
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        const marks = calculateAllMarks(evaluation);
+        
+        const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
+        const extraMarksValues = p1.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
+        const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
+
         rows.push([
           group.group_number, student?.student_name || "", group.guide_name,
-          evaluation.problem_identification ?? 0, evaluation.literature_survey ?? 0,
-          evaluation.software_engineering ?? 0, evaluation.requirement_analysis ?? 0,
-          evaluation.srs ?? 0, marks.internal_presentation_i ?? 0,
+          ...baseMarks, ...extraMarksValues, totalObtained,
         ]);
       }
       // Add spacer row
@@ -187,6 +250,25 @@ export async function exportPresentation1Report(
     }
     applyProfessionalFormattingToWorksheet(ws, rows.length, colCount, headerRows.length + 1);
     addGroupMerges(ws, groups, headerRows.length + 1, ROWS_PER_GROUP, colCount);
+
+    // Set column widths
+    const dynamicCols = [
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+    ];
+    // Add widths for extra columns
+    if (p1.extra_columns) {
+      p1.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
+    }
+    dynamicCols.push({ wch: 15 }); // for Internal I total
+    
+    ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "P1 Marks");
@@ -358,40 +440,32 @@ export async function exportPresentation2Report(
     const headerRows = addHeaderRows(p2.name, academicYear);
     rows.push(...headerRows);
 
+    const visibleCols = getExportColumns(p2, 2);
+    const extraColumnHeaders = p2.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+      (p2.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
+
     // Column headers
     const columnHeaders = [
-      "Group No",
-      "Student Name",
-      "Guide Name",
-      "Individual (10)",
-      "Team Work (10)",
-      "Presentation (10)",
-      "Paper (20)",
-      "Internal II (50)",
+      "Group No", "Student Name", "Guide Name",
+      ...visibleCols.map(c => `${c.name} (${c.maxMark})`),
+      ...extraColumnHeaders, `Internal II (${totalMaxSum})`,
     ];
     rows.push(columnHeaders);
+
     const ROWS_PER_GROUP = 4;
     for (const group of groups) {
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        const marks = calculateAllMarks(evaluation);
-
-        const individual = evaluation.individual_capacity || 0;
-        const teamwork = evaluation.team_work || 0;
-        const presentation = evaluation.presentation_qa || 0;
-        const paper = evaluation.paper_presentation || 0;
-        const internalII = marks.internal_presentation_ii || 0;
+        
+        const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
+        const extraMarksValues = p2.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
+        const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
 
         rows.push([
-          group.group_number,
-          student?.student_name || "",
-          group.guide_name,
-          individual,
-          teamwork,
-          presentation,
-          paper,
-          internalII,
+          group.group_number, student?.student_name || "", group.guide_name,
+          ...baseMarks, ...extraMarksValues, totalObtained,
         ]);
       }
       // Add spacer row
@@ -420,7 +494,7 @@ export async function exportPresentation2Report(
     addGroupMerges(ws, groups, headerRows.length + 1, ROWS_PER_GROUP, colCount);
 
     // Set column widths
-    ws["!cols"] = [
+    const dynamicCols = [
       { wch: 12 },
       { wch: 20 },
       { wch: 20 },
@@ -428,8 +502,14 @@ export async function exportPresentation2Report(
       { wch: 15 },
       { wch: 15 },
       { wch: 15 },
-      { wch: 15 },
     ];
+    // Add widths for extra columns
+    if (p2.extra_columns) {
+      p2.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
+    }
+    dynamicCols.push({ wch: 15 }); // for Internal II total
+    
+    ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "P2");
@@ -478,36 +558,32 @@ export async function exportPresentation3Report(
     const headerRows = addHeaderRows(p3.name, academicYear);
     rows.push(...headerRows);
 
+    const visibleCols = getExportColumns(p3, 3);
+    const extraColumnHeaders = p3.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+      (p3.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
+
     // Column headers
     const columnHeaders = [
-      "Group No",
-      "Student Name",
-      "Guide Name",
-      "Ident Module (10)",
-      "Coding (10)",
-      "Team Work (10)",
-      "Understanding (10)",
-      "Presentation (10)",
-      "Internal III (50)",
+      "Group No", "Student Name", "Guide Name",
+      ...visibleCols.map(c => `${c.name} (${c.maxMark})`),
+      ...extraColumnHeaders, `Internal III (${totalMaxSum})`,
     ];
     rows.push(columnHeaders);
+
     const ROWS_PER_GROUP = 4;
     for (const group of groups) {
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        const marks = calculateAllMarks(evaluation);
+        
+        const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
+        const extraMarksValues = p3.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
+        const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
 
         rows.push([
-          group.group_number,
-          student?.student_name || "",
-          group.guide_name,
-          evaluation.identification_module ?? 0,
-          evaluation.coding ?? 0,
-          evaluation.team_work ?? 0,
-          evaluation.understanding ?? 0,
-          evaluation.presentation_qa ?? 0,
-          marks.internal_presentation_iii ?? 0,
+          group.group_number, student?.student_name || "", group.guide_name,
+          ...baseMarks, ...extraMarksValues, totalObtained,
         ]);
       }
       // Add spacer row
@@ -536,7 +612,7 @@ export async function exportPresentation3Report(
     addGroupMerges(ws, groups, headerRows.length + 1, ROWS_PER_GROUP, colCount);
 
     // Set column widths
-    ws["!cols"] = [
+    const dynamicCols = [
       { wch: 12 },
       { wch: 20 },
       { wch: 20 },
@@ -545,8 +621,14 @@ export async function exportPresentation3Report(
       { wch: 15 },
       { wch: 15 },
       { wch: 15 },
-      { wch: 15 },
     ];
+    // Add widths for extra columns
+    if (p3.extra_columns) {
+      p3.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
+    }
+    dynamicCols.push({ wch: 15 }); // for Internal III total
+    
+    ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "P3");
@@ -595,42 +677,32 @@ export async function exportPresentation4Report(
     const headerRows = addHeaderRows(p4.name, academicYear);
     rows.push(...headerRows);
 
+    const visibleCols = getExportColumns(p4, 4);
+    const extraColumnHeaders = p4.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+      (p4.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
+
     // Column headers
     const columnHeaders = [
-      "Group No",
-      "Student Name",
-      "Guide Name",
-      "Testing (10)",
-      "Participation (10)",
-      "Publication (10)",
-      "Project Report (20)",
-      "Internal IV (50)",
+      "Group No", "Student Name", "Guide Name",
+      ...visibleCols.map(c => `${c.name} (${c.maxMark})`),
+      ...extraColumnHeaders, `Internal IV (${totalMaxSum})`,
     ];
     rows.push(columnHeaders);
 
-    // Data rows (fixed 4-row blocks per group)
     const ROWS_PER_GROUP = 4;
     for (const group of groups) {
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        const marks = calculateAllMarks(evaluation);
-
-        const testing = evaluation.testing || 0;
-        const participation = evaluation.participation_conference || 0;
-        const publication = evaluation.publication || 0;
-        const projectReport = evaluation.project_report || 0;
-        const internalIV = marks.internal_presentation_iv || 0;
+        
+        const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
+        const extraMarksValues = p4.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
+        const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
 
         rows.push([
-          group.group_number,
-          student?.student_name || "",
-          group.guide_name,
-          testing,
-          participation,
-          publication,
-          projectReport,
-          internalIV,
+          group.group_number, student?.student_name || "", group.guide_name,
+          ...baseMarks, ...extraMarksValues, totalObtained,
         ]);
       }
       // Add spacer row
@@ -659,7 +731,7 @@ export async function exportPresentation4Report(
     addGroupMerges(ws, groups, headerRows.length + 1, ROWS_PER_GROUP, colCount);
 
     // Set column widths
-    ws["!cols"] = [
+    const dynamicCols = [
       { wch: 12 },
       { wch: 20 },
       { wch: 20 },
@@ -667,8 +739,14 @@ export async function exportPresentation4Report(
       { wch: 15 },
       { wch: 15 },
       { wch: 15 },
-      { wch: 15 },
     ];
+    // Add widths for extra columns
+    if (p4.extra_columns) {
+      p4.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
+    }
+    dynamicCols.push({ wch: 15 }); // for Internal IV total
+    
+    ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "P4");
@@ -718,24 +796,24 @@ export async function exportSemester1Report(
     const headerRows = addHeaderRows("Semester 7", academicYear);
     rows.push(...headerRows);
 
+    const visibleCols1 = getExportColumns(p1, 1);
+    const extraCols1 = p1.extra_columns || [];
+    const totalMax1 = visibleCols1.reduce((s, c) => s + c.maxMark, 0) + extraCols1.reduce((s, c) => s + c.maxMark, 0);
+
+    const visibleCols2 = getExportColumns(p2, 2);
+    const extraCols2 = p2.extra_columns || [];
+    const totalMax2 = visibleCols2.reduce((s, c) => s + c.maxMark, 0) + extraCols2.reduce((s, c) => s + c.maxMark, 0);
+
     // Column headers
     const columnHeaders = [
-      "Group No",
-      "Student Name",
-      "Guide Name",
-      "Problem ID (10)",
-      "Literature (10)",
-      "Software Eng (10)",
-      "Req Analysis (10)",
-      "SRS (10)",
-      "Internal I (50)",
-      "Individual (10)",
-      "Team Work (10)",
-      "Presentation (10)",
-      "Paper (20)",
-      "Internal II (50)",
-      "Total (100)",
-      "Total (50)",
+      "Group No", "Student Name", "Guide Name",
+      ...visibleCols1.map(c => `${c.name} (${c.maxMark})`),
+      ...extraCols1.map(c => `${c.name} (${c.maxMark})`),
+      `Internal I (${totalMax1})`,
+      ...visibleCols2.map(c => `${c.name} (${c.maxMark})`),
+      ...extraCols2.map(c => `${c.name} (${c.maxMark})`),
+      `Internal II (${totalMax2})`,
+      "Total", "Total (50)"
     ];
     rows.push(columnHeaders);
 
@@ -752,35 +830,25 @@ export async function exportSemester1Report(
 
         const eval1 = (student1?.evaluation || {}) as Evaluation;
         const eval2 = (student2?.evaluation || {}) as Evaluation;
-        const marks1 = calculateAllMarks(eval1);
-        const marks2 = calculateAllMarks(eval2);
 
-        const individual = eval2.individual_capacity || 0;
-        const teamwork = eval2.team_work || 0;
-        const presentation = eval2.presentation_qa || 0;
-        const paper = eval2.paper_presentation || 0;
-        const internalII = marks2.internal_presentation_ii || 0;
-        const internalI = marks1.internal_presentation_i || 0;
-        const total100 = internalI + internalII;
-        const total50 = total100 / 2;
+        const baseMarks1 = visibleCols1.map(c => Number((eval1 as any)[c.key]) || 0);
+        const extraMarks1 = extraCols1.map(c => Number(eval1.extra_marks?.[c.id]) || 0);
+        const internalI = baseMarks1.reduce((a, b) => a + b, 0) + extraMarks1.reduce((a, b) => a + b, 0);
+
+        const baseMarks2 = visibleCols2.map(c => Number((eval2 as any)[c.key]) || 0);
+        const extraMarks2 = extraCols2.map(c => Number(eval2.extra_marks?.[c.id]) || 0);
+        const internalII = baseMarks2.reduce((a, b) => a + b, 0) + extraMarks2.reduce((a, b) => a + b, 0);
+
+        const totalObtained = internalI + internalII;
+        const totalScaled = totalObtained / 2; // Keep scaling for now, assuming 50+50 base
 
         rows.push([
           group1.group_number,
           student1?.student_name || student2?.student_name || "",
           group1.guide_name,
-          eval1.problem_identification ?? 0,
-          eval1.literature_survey ?? 0,
-          eval1.software_engineering ?? 0,
-          eval1.requirement_analysis ?? 0,
-          eval1.srs ?? 0,
-          internalI ?? 0,
-          individual,
-          teamwork,
-          presentation,
-          paper,
-          internalII,
-          total100,
-          total50,
+          ...baseMarks1, ...extraMarks1, internalI,
+          ...baseMarks2, ...extraMarks2, internalII,
+          totalObtained, totalScaled,
         ]);
       }
       // Add spacer row
@@ -879,24 +947,24 @@ export async function exportSemester2Report(
     const headerRows = addHeaderRows("Semester 8", academicYear);
     rows.push(...headerRows);
 
+    const visibleCols3 = getExportColumns(p3, 3);
+    const extraCols3 = p3.extra_columns || [];
+    const totalMax3 = visibleCols3.reduce((s, c) => s + c.maxMark, 0) + extraCols3.reduce((s, c) => s + c.maxMark, 0);
+
+    const visibleCols4 = getExportColumns(p4, 4);
+    const extraCols4 = p4.extra_columns || [];
+    const totalMax4 = visibleCols4.reduce((s, c) => s + c.maxMark, 0) + extraCols4.reduce((s, c) => s + c.maxMark, 0);
+
     // Column headers
     const columnHeaders = [
-      "Group No",
-      "Student Name",
-      "Guide Name",
-      "Ident Module (10)",
-      "Coding (10)",
-      "Team Work (10)",
-      "Understanding (10)",
-      "Presentation (10)",
-      "Internal III (50)",
-      "Testing (10)",
-      "Participation (10)",
-      "Publication (10)",
-      "Project Report (20)",
-      "Internal IV (50)",
-      "Total (100)",
-      "Total (50)",
+      "Group No", "Student Name", "Guide Name",
+      ...visibleCols3.map(c => `${c.name} (${c.maxMark})`),
+      ...extraCols3.map(c => `${c.name} (${c.maxMark})`),
+      `Internal III (${totalMax3})`,
+      ...visibleCols4.map(c => `${c.name} (${c.maxMark})`),
+      ...extraCols4.map(c => `${c.name} (${c.maxMark})`),
+      `Internal IV (${totalMax4})`,
+      "Total", "Total (50)"
     ];
     rows.push(columnHeaders);
 
@@ -913,35 +981,25 @@ export async function exportSemester2Report(
 
         const eval3 = (student3?.evaluation || {}) as Evaluation;
         const eval4 = (student4?.evaluation || {}) as Evaluation;
-        const marks3 = calculateAllMarks(eval3);
-        const marks4 = calculateAllMarks(eval4);
 
-        const testing = eval4.testing || 0;
-        const participation = eval4.participation_conference || 0;
-        const publication = eval4.publication || 0;
-        const projectReport = eval4.project_report || 0;
-        const internalIV = marks4.internal_presentation_iv || 0;
-        const internalIII = marks3.internal_presentation_iii || 0;
-        const total100 = internalIII + internalIV;
-        const total50 = total100 / 2;
+        const baseMarks3 = visibleCols3.map(c => Number((eval3 as any)[c.key]) || 0);
+        const extraMarks3 = extraCols3.map(c => Number(eval3.extra_marks?.[c.id]) || 0);
+        const internalIII = baseMarks3.reduce((a, b) => a + b, 0) + extraMarks3.reduce((a, b) => a + b, 0);
+
+        const baseMarks4 = visibleCols4.map(c => Number((eval4 as any)[c.key]) || 0);
+        const extraMarks4 = extraCols4.map(c => Number(eval4.extra_marks?.[c.id]) || 0);
+        const internalIV = baseMarks4.reduce((a, b) => a + b, 0) + extraMarks4.reduce((a, b) => a + b, 0);
+
+        const totalObtained = internalIII + internalIV;
+        const totalScaled = totalObtained / 2; // Keep scaling for now, assuming 50+50 base
 
         rows.push([
           group3.group_number,
           student3?.student_name || student4?.student_name || "",
           group3.guide_name,
-          eval3.identification_module ?? 0,
-          eval3.coding ?? 0,
-          eval3.team_work ?? 0,
-          eval3.understanding ?? 0,
-          eval3.presentation_qa ?? 0,
-          internalIII ?? 0,
-          testing,
-          participation,
-          publication,
-          projectReport,
-          internalIV,
-          total100,
-          total50,
+          ...baseMarks3, ...extraMarks3, internalIII,
+          ...baseMarks4, ...extraMarks4, internalIV,
+          totalObtained, totalScaled,
         ]);
       }
       // Add spacer row

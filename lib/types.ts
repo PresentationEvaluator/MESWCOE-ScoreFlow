@@ -38,6 +38,12 @@ export interface AuthContextType {
 // =====================================================
 // Academic & Presentation Types
 // =====================================================
+export interface CustomColumn {
+  id: string;
+  name: string;
+  maxMark: number;
+}
+
 export interface AcademicYear {
   id: string;
   slug?: string; // Short URL-friendly identifier
@@ -48,13 +54,20 @@ export interface AcademicYear {
   updated_at: string;
 }
 
+export interface BaseColumnConfig {
+  name: string;
+  maxMark: number;
+  isHidden?: boolean;
+}
+
 export interface Presentation {
   id: string;
   slug?: string; // Short URL-friendly identifier
   name: string;
   semester: string | null;
   academic_year_id: string;
-  custom_columns?: Record<string, string>; // User-defined column headers
+  custom_columns?: Record<string, string | BaseColumnConfig>; // User-defined column headers or full config
+  extra_columns?: CustomColumn[]; // Dynamic additional columns
   created_at: string;
   updated_at: string;
 }
@@ -117,6 +130,7 @@ export interface Evaluation {
   // Image fields for Excel exports
   pasted_image_1: string | null; // Presentation 2 image (base64 or URL)
   pasted_image_2: string | null; // Presentation 4 image (base64 or URL)
+  extra_marks?: Record<string, number>; // Marks for dynamically added extra columns
   created_at: string;
   updated_at: string;
 }

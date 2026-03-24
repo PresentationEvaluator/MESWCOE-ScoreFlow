@@ -7,6 +7,7 @@ import {
   GroupWithStudents,
   Evaluation,
   CalculatedMarks,
+  BaseColumnConfig,
 } from "@/lib/types";
 import {
   getPresentation,
@@ -78,16 +79,16 @@ export default function PresentationView({
 }: PresentationViewProps) {
   const router = useRouter();
   const { user, isAdmin, isTeacher } = useAuth();
-  
+
   // Determine readonly status based on edit mode flag
   // If edit mode was set (from marks-entry), and user is admin/teacher, allow editing
   // Otherwise, readonly
   const [isReadOnly, setIsReadOnly] = useState(true);
-  
+
   useEffect(() => {
     // Check if this came from marks-entry (edit mode enabled)
     const editModeEnabled = isEditModeEnabled();
-    
+
     // Allow editing only if:
     // 1. Edit mode was set (came from marks-entry), AND
     // 2. User is admin or teacher (role-based check)
@@ -131,7 +132,7 @@ export default function PresentationView({
   async function loadData() {
     try {
       setLoading(true);
-      
+
       // Load Current - use slug-aware lookup
       const presData = await getPresentationBySlugOrId(presentationId);
 
@@ -158,7 +159,7 @@ export default function PresentationView({
         const unauthorizedGroups = groupsData.filter(
           (g) => g.guide_user_id !== user.id
         );
-        
+
         if (unauthorizedGroups.length > 0) {
           toast.error("Security: Unauthorized group access detected. Clearing data.");
           setGroups([]);
@@ -199,20 +200,20 @@ export default function PresentationView({
         } else {
           sGroups = await getGroupsByPresentation(sibling.id);
         }
-        
+
         // Authorization check for sibling groups
         if (isTeacher && user) {
           const unauthorizedSiblingGroups = sGroups.filter(
             (g) => g.guide_user_id !== user.id
           );
-          
+
           if (unauthorizedSiblingGroups.length > 0) {
             toast.error("Security: Unauthorized sibling group access detected.");
             setSiblingGroups([]);
             return;
           }
         }
-        
+
         setSiblingGroups(sGroups);
       }
     } catch (error) {
@@ -226,6 +227,43 @@ export default function PresentationView({
     }
   }
 
+  const getColumnConfig = (key: string): BaseColumnConfig => {
+    // Basic defaults if everything else fails
+    const defaultVal = MARK_LIMITS[key] || 10;
+    const defaultName = key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+
+    if (!presentation) return { name: defaultName, maxMark: defaultVal, isHidden: false };
+
+    const saved = presentation.custom_columns?.[key];
+    if (typeof saved === "string") {
+      return { name: saved, maxMark: defaultVal, isHidden: false };
+    } else if (saved && typeof saved === "object") {
+      return {
+        name: saved.name || defaultName,
+        maxMark: saved.maxMark || defaultVal,
+        isHidden: !!saved.isHidden
+      };
+    }
+    return { name: defaultName, maxMark: defaultVal, isHidden: false };
+  };
+
+  const getVisibleBaseColumns = () => {
+    const presNum = parseInt(presentation?.name.match(/\d+/)?.[0] || "0");
+    const keys: Record<number, string[]> = {
+      1: ["problem_identification", "literature_survey", "software_engineering", "requirement_analysis", "srs"],
+      2: ["individual_capacity", "team_work", "presentation_qa", "paper_presentation"],
+      3: ["identification_module", "coding", "team_work", "understanding", "internal_presentation_iii"],
+      4: ["testing", "participation_conference", "publication", "project_report"]
+    };
+
+    const relevantKeys = keys[presNum] || [];
+    return relevantKeys.map(k => ({ key: k, ...getColumnConfig(k) })).filter(c => !c.isHidden);
+  };
+
+  const visibleBaseCols = getVisibleBaseColumns();
+  const totalMaxPossible = visibleBaseCols.reduce((sum, col) => sum + col.maxMark, 0) +
+    (presentation?.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
+
   const handleMarkChange = async (
     studentId: string,
     field: keyof Evaluation,
@@ -234,7 +272,16 @@ export default function PresentationView({
     const numValue = value === "" ? 0 : parseFloat(value);
 
     // Validation
-    const maxMark = MARK_LIMITS[field] || 50;
+    const isExtra = String(field).startsWith("extra_");
+    let maxMark = 10;
+
+    if (isExtra) {
+      const extraCol = presentation?.extra_columns?.find(c => c.id === field);
+      if (extraCol) maxMark = extraCol.maxMark;
+    } else {
+      maxMark = getColumnConfig(field as string).maxMark;
+    }
+
     if (numValue < 0 || numValue > maxMark) {
       toast.error(`Mark must be between 0 and ${maxMark}`);
       return;
@@ -242,21 +289,25 @@ export default function PresentationView({
 
     const fieldKey = `${studentId}-${field}`;
 
-    // Optimistic update (use Partial cast for evaluation to avoid TS errors when id or other fields are missing)
+    // Optimistic update
     setGroups((currentGroups) =>
       currentGroups.map((group) => ({
         ...group,
-        students: group.students.map((student) =>
-          student.id === studentId
-            ? {
-              ...student,
-              evaluation: {
-                ...(student.evaluation as Partial<Evaluation>),
-                [field]: numValue,
-              } as any,
-            }
-            : student,
-        ),
+        students: group.students.map((student) => {
+          if (student.id !== studentId) return student;
+
+          let newEval = { ...(student.evaluation as Partial<Evaluation>) };
+          if (isExtra) {
+            newEval.extra_marks = { ...(newEval.extra_marks || {}), [field as string]: numValue };
+          } else {
+            (newEval as any)[field] = numValue;
+          }
+
+          return {
+            ...student,
+            evaluation: newEval as any,
+          };
+        }),
       })),
     );
 
@@ -455,6 +506,8 @@ export default function PresentationView({
     return presentation.custom_columns?.[key] || defaultName;
   };
 
+  const extraColumnsMaxSum = presentation.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0;
+
   return (
     <div className="min-h-screen bg-gray-50 prevent-scroll">
       {/* Header */}
@@ -603,7 +656,7 @@ export default function PresentationView({
           }
           return null;
         })()}
-        
+
         {groups.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <Users className="w-12 sm:w-16 h-12 sm:h-16 text-gray-400 mx-auto mb-4" />
@@ -631,57 +684,19 @@ export default function PresentationView({
                   <th className="w-48">Student Name</th>
                   <th className="w-48">Guide Name</th>
 
-                  {/* Presentation 1 - Internal I Only */}
-                  {isPres1 && (
-                    <>
-                      <th className="w-32">{getColumnName("problem_identification", "Problem ID (10)")}</th>
-                      <th className="w-32">{getColumnName("literature_survey", "Literature (10)")}</th>
-                      <th className="w-32">{getColumnName("software_engineering", "Software Eng (10)")}</th>
-                      <th className="w-32">{getColumnName("requirement_analysis", "Req Analysis (10)")}</th>
-                      <th className="w-32">{getColumnName("srs", "SRS (10)")}</th>
-                      <th className="w-28 bg-blue-50">Internal I Total (50)</th>
-                    </>
-                  )}
-
-                  {/* Presentation 2 - Internal II Only */}
-                  {isPres2 && (
-                    <>
-                      <th className="w-24">{getColumnName("individual_capacity", "Individual (10)")}</th>
-                      <th className="w-24">{getColumnName("team_work", "Team Work (10)")}</th>
-                      <th className="w-24">{getColumnName("presentation_qa", "Presentation (10)")}</th>
-                      <th className="w-24">{getColumnName("paper_presentation", "Paper (20)")}</th>
-                      <th className="w-28 bg-blue-50">
-                        Internal II Total (50)
-                      </th>
-                    </>
-                  )}
-
-                  {/* Presentation 3 - Internal III Only */}
-                  {isPres3 && (
-                    <>
-                      <th className="w-24">{getColumnName("identification_module", "Ident Module (10)")}</th>
-                      <th className="w-24">{getColumnName("coding", "Coding (10)")}</th>
-                      <th className="w-24">{getColumnName("team_work", "Team Work (10)")}</th>
-                      <th className="w-24">{getColumnName("understanding", "Understanding (10)")}</th>
-                      <th className="w-24">{getColumnName("internal_presentation_iii", "Presentation (10)")}</th>
-                      <th className="w-28 bg-blue-50">
-                        Internal III Total (50)
-                      </th>
-                    </>
-                  )}
-
-                  {/* Presentation 4 - Internal IV Only */}
-                  {isPres4 && (
-                    <>
-                      <th className="w-24">{getColumnName("testing", "Testing (10)")}</th>
-                      <th className="w-24">{getColumnName("participation_conference", "Participation (10)")}</th>
-                      <th className="w-24">{getColumnName("publication", "Publication (10)")}</th>
-                      <th className="w-24">{getColumnName("project_report", "Project Report (20)")}</th>
-                      <th className="w-28 bg-blue-50">
-                        Internal IV Total (50)
-                      </th>
-                    </>
-                  )}
+                  {visibleBaseCols.map((col) => (
+                    <th key={col.key} className="w-32">
+                      {col.name} ({col.maxMark})
+                    </th>
+                  ))}
+                  {presentation.extra_columns?.map((col) => (
+                    <th key={col.id} className="w-24 bg-purple-50 text-purple-900">
+                      {col.name} ({col.maxMark})
+                    </th>
+                  ))}
+                  <th className="w-28 bg-blue-50 text-blue-900 font-bold border-l-2 border-blue-200">
+                    {isPres1 ? "Internal I" : isPres2 ? "Internal II" : isPres3 ? "Internal III" : "Internal IV"} Total ({totalMaxPossible})
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -698,6 +713,9 @@ export default function PresentationView({
                           student.evaluation || ({} as Partial<Evaluation>);
                         // Calculate marks for CURRENT record
                         const calculated = calculateAllMarks(evaluation);
+                        const extraMarksSum = presentation.extra_columns?.reduce((sum, col) => {
+                          return sum + (Number(evaluation.extra_marks?.[col.id]) || 0);
+                        }, 0) || 0;
 
                         // Match Sibling Student
                         let sStudent = null;
@@ -739,325 +757,51 @@ export default function PresentationView({
                               </td>
                             )}
 
-                            {/* Presentation 1 - Internal I Only */}
-                            {isPres1 && (
-                              <>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={
-                                      evaluation.problem_identification || 0
-                                    }
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "problem_identification",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.literature_survey || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "literature_survey",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.software_engineering || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "software_engineering",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.requirement_analysis || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "requirement_analysis",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.srs || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "srs",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td className="calculated-field">
-                                  {calculated.internal_presentation_i.toFixed(
-                                    1,
-                                  )}
-                                </td>
-                              </>
-                            )}
+                            {visibleBaseCols.map((col) => (
+                              <td key={col.key}>
+                                <input
+                                  type="number"
+                                  disabled={isReadOnly}
+                                  value={(evaluation as any)[col.key] || 0}
+                                  onChange={(e) =>
+                                    handleMarkChange(
+                                      student.id,
+                                      col.key as any,
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="marks-input text-center"
+                                />
+                              </td>
+                            ))}
+                            {presentation.extra_columns?.map((col) => (
+                              <td key={col.id} className="bg-purple-50/10">
+                                <input
+                                  type="number"
+                                  disabled={isReadOnly}
+                                  value={evaluation.extra_marks?.[col.id] || 0}
+                                  onChange={(e) =>
+                                    handleMarkChange(
+                                      student.id,
+                                      col.id as any,
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="marks-input border-purple-200 text-center"
+                                />
+                              </td>
+                            ))}
+                            <td className="calculated-field font-bold bg-blue-50 text-blue-900 border-l-2 border-blue-100">
+                              {(() => {
+                                const baseSum = visibleBaseCols.reduce((sum, col) => sum + (Number((evaluation as any)[col.key]) || 0), 0);
+                                const extraSum = presentation.extra_columns?.reduce((sum, col) => sum + (Number(evaluation.extra_marks?.[col.id]) || 0), 0) || 0;
+                                return (baseSum + extraSum).toFixed(1);
+                              })()}
+                            </td>
 
-                            {/* Presentation 2 - Internal II Only */}
-                            {isPres2 && (
-                              <>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.individual_capacity || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "individual_capacity",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.team_work || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "team_work",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.presentation_qa || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "presentation_qa",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.paper_presentation || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "paper_presentation",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td className="calculated-field">
-                                  {calculated.internal_presentation_ii.toFixed(
-                                    1,
-                                  )}
-                                </td>
-                              </>
-                            )}
 
-                            {/* Presentation 3 - Internal III Only */}
-                            {isPres3 && (
-                              <>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={
-                                      evaluation.identification_module || 0
-                                    }
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "identification_module",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.coding || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "coding",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.team_work || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "team_work",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.understanding || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "understanding",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.presentation_qa || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "presentation_qa",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td className="calculated-field">
-                                  {calculated.internal_presentation_iii.toFixed(
-                                    1,
-                                  )}
-                                </td>
-                              </>
-                            )}
 
-                            {/* Presentation 4 - Internal IV Only */}
-                            {isPres4 && (
-                              <>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.testing || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "testing",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={
-                                      evaluation.participation_conference || 0
-                                    }
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "participation_conference",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.publication || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "publication",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="number"
-                                    disabled={isReadOnly}
-                                    value={evaluation.project_report || 0}
-                                    onChange={(e) =>
-                                      handleMarkChange(
-                                        student.id,
-                                        "project_report",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="marks-input"
-                                  />
-                                </td>
-                                <td className="calculated-field">
-                                  {calculated.internal_presentation_iv.toFixed(
-                                    1,
-                                  )}
-                                </td>
-                              </>
-                            )}
+
                           </tr>
                         );
                       })}
