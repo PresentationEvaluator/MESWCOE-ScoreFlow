@@ -287,7 +287,7 @@ export default function ClassificationView({
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <button
-                                onClick={() => router.push(`/presentation/${generateSlug(presentationId)}`)}
+                                onClick={() => router.push(`/presentation/${generateSlug(presentation.id)}`)}
                                 className="btn btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center"
                             >
                                 <LayoutDashboard className="w-4 h-5 flex-shrink-0" />

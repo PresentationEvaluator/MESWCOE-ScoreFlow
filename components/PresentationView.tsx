@@ -108,6 +108,7 @@ export default function PresentationView({
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [showSemesterDropdown, setShowSemesterDropdown] = useState(false);
   const [academicYearId, setAcademicYearId] = useState<string>("");
+  const [resolvedPresentationId, setResolvedPresentationId] = useState<string>("");
   const [lastLoadedAsTeacher, setLastLoadedAsTeacher] = useState<boolean | null>(null);
 
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -145,6 +146,7 @@ export default function PresentationView({
 
       setPresentation(presData);
       setAcademicYearId(presData.academic_year_id);
+      setResolvedPresentationId(presData.id);
       setGroups(groupsData);
       setLastLoadedAsTeacher(isTeacher); // Track authorization level used for this load
 
@@ -1064,7 +1066,7 @@ export default function PresentationView({
       {/* Group Management Modal */}
       {showGroupManagement && (
         <GroupManagement
-          presentationId={presentationId}
+          presentationId={resolvedPresentationId || presentationId}
           onClose={() => {
             setShowGroupManagement(false);
             loadData();
