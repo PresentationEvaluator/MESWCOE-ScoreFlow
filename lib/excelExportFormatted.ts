@@ -45,7 +45,8 @@ export function applyProfessionalFormattingToWorksheet(
       const cell = ws[cellAddress];
 
       // Skip empty cells below header rows, only apply borders to cells with content
-      if (!cell || (cell.v === "" && row >= startDataRow)) {
+      // Skip empty cells only if they are below the header rows
+      if ((!cell && row >= startDataRow) || (cell && cell.v === "" && row >= startDataRow)) {
         continue;
       }
 
@@ -81,17 +82,12 @@ function addHeaderRows(
   academicYear: any,
   isAnnual: boolean = false,
 ): string[][] {
-  const headerRows: string[][] = [["Department of Computer Engineering"]];
+  const headerRows: string[][] = [["M.E.S. Wadia College of Engineering, Pune-01"]];
+  headerRows.push(["Department of Computer Engineering"]);
 
-  if (isAnnual) {
-    headerRows.push([
-      `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
-    ]);
-  } else {
-    headerRows.push([
-      `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
-    ]);
-  }
+  headerRows.push([
+    `BE Project Annual TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
+  ]);
 
   return headerRows;
 }
@@ -125,13 +121,13 @@ async function prepareSemester1DataFormatted(
     : getGroupsByPresentation;
   let p1Groups = p1 ? await getGroupsFunction(p1.id) : [];
   let p2Groups = p2 ? await getGroupsFunction(p2.id) : [];
-  
+
   // Filter by guide if specified
   if (guideFilter && guideFilter !== "all") {
     p1Groups = p1Groups.filter((g: any) => g.guide_name === guideFilter);
     p2Groups = p2Groups.filter((g: any) => g.guide_name === guideFilter);
   }
-  
+
   const baseGroups = p1Groups.length > 0 ? p1Groups : p2Groups;
   const secondaryGroups = p1Groups.length > 0 ? p2Groups : p1Groups;
 
@@ -158,13 +154,13 @@ async function prepareSemester1DataFormatted(
         const s1 = isBaseP1
           ? sBase
           : g1?.students.find(
-              (s: any) => s.student_name === sBase.student_name,
-            );
+            (s: any) => s.student_name === sBase.student_name,
+          );
         const s2 = !isBaseP1
           ? sBase
           : g2?.students.find(
-              (s: any) => s.student_name === sBase.student_name,
-            );
+            (s: any) => s.student_name === sBase.student_name,
+          );
 
         const s1Final = s1 || g1?.students[i];
         const s2Final = s2 || g2?.students[i];
@@ -233,13 +229,13 @@ async function prepareSemester2DataFormatted(
     : getGroupsByPresentation;
   let p3Groups = p3 ? await getGroupsFunction(p3.id) : [];
   let p4Groups = p4 ? await getGroupsFunction(p4.id) : [];
-  
+
   // Filter by guide if specified
   if (guideFilter && guideFilter !== "all") {
     p3Groups = p3Groups.filter((g: any) => g.guide_name === guideFilter);
     p4Groups = p4Groups.filter((g: any) => g.guide_name === guideFilter);
   }
-  
+
   const baseGroups = p3Groups.length > 0 ? p3Groups : p4Groups;
   const secondaryGroups = p3Groups.length > 0 ? p4Groups : p3Groups;
 
@@ -266,13 +262,13 @@ async function prepareSemester2DataFormatted(
         const s3 = isBaseP3
           ? sBase
           : g3?.students.find(
-              (s: any) => s.student_name === sBase.student_name,
-            );
+            (s: any) => s.student_name === sBase.student_name,
+          );
         const s4 = !isBaseP3
           ? sBase
           : g4?.students.find(
-              (s: any) => s.student_name === sBase.student_name,
-            );
+            (s: any) => s.student_name === sBase.student_name,
+          );
 
         const s3Final = s3 || g3?.students[i];
         const s4Final = s4 || g4?.students[i];

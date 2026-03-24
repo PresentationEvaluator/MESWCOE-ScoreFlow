@@ -18,19 +18,19 @@ import { DEFAULT_COLUMNS } from "./constants";
 function getExportColumns(presentation: Presentation, presNum: number) {
   const defaultConfig = DEFAULT_COLUMNS[presNum] || {};
   const keys = Object.keys(defaultConfig);
-  
+
   const visibleBase = keys.map(key => {
     const defaultCol = defaultConfig[key];
     const config = (presentation.custom_columns as any)?.[key];
-    
+
     if (typeof config === "string") {
       return { key, name: config, maxMark: defaultCol.maxMark, isHidden: false };
     } else if (config && typeof config === "object") {
-      return { 
-        key, 
-        name: config.name || defaultCol.name, 
-        maxMark: config.maxMark || defaultCol.maxMark, 
-        isHidden: !!config.isHidden 
+      return {
+        key,
+        name: config.name || defaultCol.name,
+        maxMark: config.maxMark || defaultCol.maxMark,
+        isHidden: !!config.isHidden
       };
     }
     return { key, name: defaultCol.name, maxMark: defaultCol.maxMark, isHidden: false };
@@ -65,6 +65,7 @@ function addHeaderRows(
   }
 
   const headerRows = [
+    ["M.E.S. Wadia College of Engineering, Pune-01"],
     ["Department of Computer Engineering"],
     [
       `BE Project ${semLabel} TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
@@ -186,11 +187,11 @@ export async function exportPresentation1Report(
 
     const visibleCols = getExportColumns(p1, 1);
     const extraColumnHeaders = p1.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
-    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) +
       (p1.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
 
     const columnHeaders = [
-      "Group No", "Student Name", "Guide Name", 
+      "Group No", "Student Name", "Guide Name",
       ...visibleCols.map(c => `${c.name} (${c.maxMark})`),
       ...extraColumnHeaders, `Internal I (${totalMaxSum})`,
     ];
@@ -201,7 +202,7 @@ export async function exportPresentation1Report(
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        
+
         const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
         const extraMarksValues = p1.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
         const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
@@ -240,7 +241,7 @@ export async function exportPresentation1Report(
       p1.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
     }
     dynamicCols.push({ wch: 15 }); // for Internal I total
-    
+
     ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
@@ -302,15 +303,15 @@ export async function exportProjectClassificationReport(
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
         const tick = "√";
-        const industryDisplay = (evaluation.finance_industry || 0) > 0 ? 
+        const industryDisplay = (evaluation.finance_industry || 0) > 0 ?
           `${tick}${evaluation.industry_name ? ` - ${evaluation.industry_name}` : ""}` : "";
-        
+
         // Build the In-Home/Sponsored display with industry name if applicable
         let projectTypeDisplay = evaluation.project_type_in_house_sponsored || "";
         if (evaluation.project_type_in_house_sponsored === "Sponsored" && evaluation.industry_name) {
           projectTypeDisplay = `${projectTypeDisplay}\n(${evaluation.industry_name})`;
         }
-        
+
         rows.push([
           group.group_number, student?.student_name || "", group.guide_name,
           evaluation.project_title || "", projectTypeDisplay,
@@ -415,7 +416,7 @@ export async function exportPresentation2Report(
 
     const visibleCols = getExportColumns(p2, 2);
     const extraColumnHeaders = p2.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
-    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) +
       (p2.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
 
     // Column headers
@@ -431,7 +432,7 @@ export async function exportPresentation2Report(
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        
+
         const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
         const extraMarksValues = p2.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
         const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
@@ -481,7 +482,7 @@ export async function exportPresentation2Report(
       p2.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
     }
     dynamicCols.push({ wch: 15 }); // for Internal II total
-    
+
     ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
@@ -533,7 +534,7 @@ export async function exportPresentation3Report(
 
     const visibleCols = getExportColumns(p3, 3);
     const extraColumnHeaders = p3.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
-    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) +
       (p3.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
 
     // Column headers
@@ -549,7 +550,7 @@ export async function exportPresentation3Report(
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        
+
         const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
         const extraMarksValues = p3.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
         const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
@@ -600,7 +601,7 @@ export async function exportPresentation3Report(
       p3.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
     }
     dynamicCols.push({ wch: 15 }); // for Internal III total
-    
+
     ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();
@@ -652,7 +653,7 @@ export async function exportPresentation4Report(
 
     const visibleCols = getExportColumns(p4, 4);
     const extraColumnHeaders = p4.extra_columns?.map(col => `${col.name} (${col.maxMark})`) || [];
-    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) + 
+    const totalMaxSum = visibleCols.reduce((sum, c) => sum + c.maxMark, 0) +
       (p4.extra_columns?.reduce((sum, col) => sum + col.maxMark, 0) || 0);
 
     // Column headers
@@ -668,7 +669,7 @@ export async function exportPresentation4Report(
       for (let i = 0; i < ROWS_PER_GROUP; i++) {
         const student = group.students[i];
         const evaluation = (student?.evaluation || {}) as Evaluation;
-        
+
         const baseMarks = visibleCols.map(c => Number((evaluation as any)[c.key]) || 0);
         const extraMarksValues = p4.extra_columns?.map(col => evaluation.extra_marks?.[col.id] ?? 0) || [];
         const totalObtained = baseMarks.reduce((a, b) => a + b, 0) + extraMarksValues.reduce((a, b) => a + b, 0);
@@ -718,7 +719,7 @@ export async function exportPresentation4Report(
       p4.extra_columns.forEach(() => dynamicCols.push({ wch: 15 }));
     }
     dynamicCols.push({ wch: 15 }); // for Internal IV total
-    
+
     ws["!cols"] = dynamicCols;
 
     const wb = XLSX.utils.book_new();

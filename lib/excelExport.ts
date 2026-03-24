@@ -292,7 +292,32 @@ export async function exportPresentationToExcel(
   }
 
   if (data) {
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data.rows]);
+    const academicYearId = (await (await import("./database")).getPresentation(presentationId)).academic_year_id;
+    const academicYear = await (await import("./database")).getAcademicYear(academicYearId);
+    
+    const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
+      ["Department of Computer Engineering"],
+      [
+        `BE Project ${presentationName} TW Evaluation Sheet (${academicYear.start_year}–${academicYear.end_year})`,
+      ],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([...mergedHeaders, headers, ...data.rows]);
+
+    // Merge header rows
+    if (!ws["!merges"]) ws["!merges"] = [];
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      ws["!merges"].push({ s: { r, c: 0 }, e: { r, c: headers.length - 1 } });
+    }
+
+    // Style header rows
+    const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
+    for (let r = 0; r < mergedHeaders.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[r][0] };
+      ws[addr].s = headerCellStyle;
+    }
 
     // Scale merges
     if (!ws["!merges"]) ws["!merges"] = [];
@@ -357,8 +382,9 @@ export async function exportAnnualReport(
       "Total (50)",
     ];
 
-    // Two-line header (Department + Sheet title with semester and academic year)
+    // Three-line header (College Name + Department + Sheet title)
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project TW Evaluation Sheet (SEM1) (${academicYear.start_year}–${academicYear.end_year})`,
@@ -375,12 +401,11 @@ export async function exportAnnualReport(
 
     // Center header rows across merged area
     const headerCellStyle = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
-    const header0 = XLSX.utils.encode_cell({ r: 0, c: 0 });
-    const header1 = XLSX.utils.encode_cell({ r: 1, c: 0 });
-    if (!ws[header0]) ws[header0] = { t: "s", v: mergedHeaders[0][0] };
-    if (!ws[header1]) ws[header1] = { t: "s", v: mergedHeaders[1][0] };
-    ws[header0].s = headerCellStyle;
-    ws[header1].s = headerCellStyle;
+    for (let i = 0; i < mergedHeaders.length; i++) {
+      const addr = XLSX.utils.encode_cell({ r: i, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[i][0] };
+      ws[addr].s = headerCellStyle;
+    }
 
     // Ensure column header row (below merged headers) is center aligned
     const colHeaderRow = mergedHeaders.length;
@@ -439,8 +464,9 @@ export async function exportAnnualReport(
       "Total (50)",
     ];
 
-    // Two-line header (Department + Sheet title with semester and academic year)
+    // Three-line header
     const mergedHeaders = [
+      ["M.E.S. Wadia College of Engineering, Pune-01"],
       ["Department of Computer Engineering"],
       [
         `BE Project TW Evaluation Sheet (SEM2) (${academicYear.start_year}–${academicYear.end_year})`,
@@ -457,12 +483,11 @@ export async function exportAnnualReport(
 
     // Center header rows across merged area
     const headerCellStyle2 = { alignment: { horizontal: "center", vertical: "center", wrapText: true }, font: { bold: true } };
-    const h0 = XLSX.utils.encode_cell({ r: 0, c: 0 });
-    const h1 = XLSX.utils.encode_cell({ r: 1, c: 0 });
-    if (!ws[h0]) ws[h0] = { t: "s", v: mergedHeaders[0][0] };
-    if (!ws[h1]) ws[h1] = { t: "s", v: mergedHeaders[1][0] };
-    ws[h0].s = headerCellStyle2;
-    ws[h1].s = headerCellStyle2;
+    for (let i = 0; i < mergedHeaders.length; i++) {
+      const addr = XLSX.utils.encode_cell({ r: i, c: 0 });
+      if (!ws[addr]) ws[addr] = { t: "s", v: mergedHeaders[i][0] };
+      ws[addr].s = headerCellStyle2;
+    }
 
     // Ensure column header row (below merged headers) is center aligned
     const colHeaderRow2 = mergedHeaders.length;

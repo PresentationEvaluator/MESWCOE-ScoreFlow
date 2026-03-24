@@ -17,7 +17,8 @@ function addHeaderRows(
   academicYear: AcademicYear,
   isAnnual: boolean = false
 ) {
-  const headerRows: string[][] = [["Department of Computer Engineering"]];
+  const headerRows: string[][] = [["M.E.S. Wadia College of Engineering, Pune-01"]];
+  headerRows.push(["Department of Computer Engineering"]);
 
   if (isAnnual) {
     headerRows.push([
@@ -169,6 +170,17 @@ export async function exportAnnualReport(
       // Merge header rows dynamically
       for (let r = 0; r < headerRows.length; r++) {
         ws["!merges"]!.push({ s: { r, c: 0 }, e: { r, c: colCount - 1 } });
+      }
+
+      // Explicitly style header rows to ensure visibility
+      const headerCellStyle = { 
+        alignment: { horizontal: "center", vertical: "center", wrapText: true }, 
+        font: { bold: true } 
+      };
+      for (let r = 0; r < headerRows.length; r++) {
+        const addr = XLSX.utils.encode_cell({ r, c: 0 });
+        if (!ws[addr]) ws[addr] = { t: "s", v: headerRows[r][0] };
+        ws[addr].s = headerCellStyle;
       }
 
       applyProfessionalFormattingToWorksheet(ws, rows.length, colCount, headerRows.length + 1);

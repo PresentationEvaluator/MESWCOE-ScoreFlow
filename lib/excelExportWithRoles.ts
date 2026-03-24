@@ -29,7 +29,8 @@ export interface ExportFilterOptions {
  * Add header rows and merge them across all columns
  */
 function addHeaderRows(academicYear: any, semLabel?: string, isAnnual: boolean = false): string[][] {
-  const headerRows: string[][] = [["Department of Computer Engineering"]];
+  const headerRows: string[][] = [["M.E.S. Wadia College of Engineering, Pune-01"]];
+  headerRows.push(["Department of Computer Engineering"]);
 
   if (isAnnual) {
     headerRows.push([
@@ -45,7 +46,7 @@ function addHeaderRows(academicYear: any, semLabel?: string, isAnnual: boolean =
 
 
   return headerRows;
-} 
+}
 
 /**
  * Apply any full-row merges (separator rows) that may be present in the merges array.
