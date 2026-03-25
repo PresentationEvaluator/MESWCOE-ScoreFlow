@@ -174,7 +174,7 @@ async function prepareSemester1DataFormatted(
         const internal1 = calc1.internal_presentation_i;
         const internal2 = calc2.internal_presentation_ii;
         const total100 = internal1 + internal2;
-        const total50 = total100 / 2;
+        const total50 = Math.ceil(total100 / 2);
 
         rows.push([
           group.group_number, // A
@@ -283,7 +283,7 @@ async function prepareSemester2DataFormatted(
         const internal3 = calc3.internal_presentation_iii;
         const internal4 = calc4.internal_presentation_iv;
         const total100 = internal3 + internal4;
-        const total50 = total100 / 2;
+        const total50 = Math.ceil(total100 / 2);
 
         rows.push([
           group.group_number,

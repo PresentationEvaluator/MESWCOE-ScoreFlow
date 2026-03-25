@@ -109,16 +109,18 @@ export async function exportAnnualReport(
             const individual = evaluation.individual_capacity || 0;
             const teamwork = evaluation.team_work || 0;
             const presentation_score = evaluation.presentation_qa || 0;
+            const partial_project = evaluation.partial_project_report || 0;
             const paper = evaluation.paper_presentation || 0;
             const internalII = marks.internal_presentation_ii || 0;
             const total100 = internalII;
-            const total50 = total100 / 2;
+            const total50 = Math.ceil(total100 / 2);
 
             dataRow = [
               ...baseRow,
               individual,
               teamwork,
               presentation_score,
+              partial_project,
               paper,
               internalII,
               total100,
@@ -141,7 +143,7 @@ export async function exportAnnualReport(
             const projectReport = evaluation.project_report || 0;
             const internalIV = marks.internal_presentation_iv || 0;
             const total100 = internalIV;
-            const total50 = total100 / 2;
+            const total50 = Math.ceil(total100 / 2);
 
             dataRow = [
               ...baseRow,
