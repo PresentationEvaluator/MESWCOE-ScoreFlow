@@ -35,5 +35,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#sql
+#Schema
+*.txt
+
+#CSV
+*.csv
+
+#Excel
+*.xlsx
+
+#PDF
+*.pdf
+
+#Markdown
+*.md
+
+#SQL
 *.sql

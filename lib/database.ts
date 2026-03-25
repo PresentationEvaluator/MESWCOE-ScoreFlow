@@ -1028,6 +1028,7 @@ export async function resetPresentationMarks(
       participation_conference: 0,
       publication: 0,
       project_report: 0,
+      partial_project_report: 0,
       internal_presentation_iv: 0,
     })
     .in("student_id", studentIds);

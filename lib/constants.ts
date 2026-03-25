@@ -4,17 +4,18 @@
  */
 export const DEFAULT_COLUMNS: Record<number, Record<string, { name: string; maxMark: number }>> = {
   1: {
-    problem_identification: { name: "Problem ID", maxMark: 10 },
-    literature_survey: { name: "Literature", maxMark: 10 },
-    software_engineering: { name: "Software Eng", maxMark: 10 },
-    requirement_analysis: { name: "Req Analysis", maxMark: 10 },
-    srs: { name: "SRS", maxMark: 10 },
+    problem_identification: { name: "Problem statement", maxMark: 10 },
+    requirement_analysis: { name: "Application", maxMark: 10 },
+    software_engineering: { name: "Feasibility/ Scope", maxMark: 10 },
+    literature_survey: { name: "Literature survey", maxMark: 10 },
+    srs: { name: "Presentation", maxMark: 10 },
   },
   2: {
-    individual_capacity: { name: "Individual", maxMark: 10 },
-    team_work: { name: "Team Work", maxMark: 10 },
-    presentation_qa: { name: "Presentation", maxMark: 10 },
-    paper_presentation: { name: "Paper", maxMark: 20 },
+    individual_capacity: { name: "Modeling & Designing", maxMark: 10 },
+    team_work: { name: "Planning & Prototyping", maxMark: 10 },
+    presentation_qa: { name: "Presentation & Q & A", maxMark: 10 },
+    partial_project_report: { name: "Partial Project Report", maxMark: 10 },
+    paper_presentation: { name: "Paper Presentation", maxMark: 10 },
   },
   3: {
     identification_module: { name: "Identification Module", maxMark: 10 },
@@ -25,7 +26,7 @@ export const DEFAULT_COLUMNS: Record<number, Record<string, { name: string; maxM
   },
   4: {
     testing: { name: "Testing", maxMark: 10 },
-    participation_conference: { name: "Participation", maxMark: 10 },
+    participation_conference: { name: "Participation Conference", maxMark: 10 },
     publication: { name: "Publication", maxMark: 10 },
     project_report: { name: "Project Report", maxMark: 20 },
   },
@@ -51,7 +52,8 @@ export const DEFAULT_MARK_LIMITS: Record<string, number> = {
   individual_capacity: 10,
   team_work: 10,
   presentation_qa: 10,
-  paper_presentation: 20,
+  paper_presentation: 10,
+  partial_project_report: 10,
   identification_module: 10,
   coding: 10,
   understanding: 10,

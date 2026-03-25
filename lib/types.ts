@@ -112,6 +112,7 @@ export interface Evaluation {
   participation_conference: number;
   publication: number;
   project_report: number;
+  partial_project_report: number;
   internal_presentation_iv: number;
   // Presentation 1 Additional Fields - Classification of Project (Reddish columns)
   classification_product: number;
