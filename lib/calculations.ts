@@ -52,7 +52,7 @@ export function calculateTotalOut100(internal1: number, internal2: number): numb
 }
 
 export function getTotalOut50(total_out_of_100: number): number {
-    return total_out_of_100 / 2;
+    return Math.round(total_out_of_100 / 2);
 }
 
 /**
